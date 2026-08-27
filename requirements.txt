@@ -1,0 +1,5 @@
+
+reflex==0.9.8.post1
+numpy
+pandas
+plotly
