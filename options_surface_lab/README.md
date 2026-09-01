@@ -11,9 +11,9 @@
 | AI use | Fully permitted and expected. You own every line you submit. |
 | Submission | Push to your GitHub repo; the site must render. Submit the link on Canvas. |
 
-This is the first layer of an app that will keep growing all semester. Every homework adds something to the same Reflex site.
+This is the first layer of an app that will keep growing all semester. Every homework adds something to the same site.
 
-The job this week is options data — including **expired** contracts — plus the Reflex workflow you will use for the rest of the course.
+The job this week is options data — including **expired** contracts — plus the workflow you will use for the rest of the course.
 
 > **What you are actually going to discover:** options data is sparse. Many 
 > of the contracts you want have no price on the day you want it for the 
@@ -28,22 +28,27 @@ The job this week is options data — including **expired** contracts — plus t
 
 - Pull and cache historical prices for expired option contracts.
 - Treat options data as sparse and misleading, not as a filled sheet.
-- Build an interactive Reflex app with charts and widget switches.
+- Build an interactive  app with charts and widget switches.
 - See, concretely, where the data runs out.
 
 ## What to turn in
 
-A Reflex page (AI is allowed and expected) that:
+A link to your GitHub Pages hosted site that contains a working version of 
+your app. You can serve it as an html file like we discussed in class, or 
+you can take a few extra steps and deploy the frontend portion of your 
+app. Your choice, but the html file is probably simplest.
+Your app must support the following functionality:
 
-1. Loads the cached LSEG frame. Do not re-pull unless the pickle is missing.
+1. Loads the cached LSEG pickle containing your fetched data
 2. Parses each RIC into `{underlying, expiry, put/call, strike}` and a tidy long table: one row per contract per date. `parse_option_ric()` already knows the scheme in Appendix A.
-3. Shows a 3D figure of puts or calls for one as-of date.
-4. Plots **both** `MID_PRICE` and `TRDPRC_1` so a stranger can see they are not the same series.
+3. Shows a 3D figure of puts or calls for one as-of date. An example has 
+   been provided for you, yours may differ
+4. Plots **both** `MID_PRICE` and `TRDPRC_1` so a stranger can see they are not the same series
 5. Prints two numbers on the page:
    - percent of listed series that day with a mid and **no** trade
    - median `|MID_PRICE − TRDPRC_1|` on series that have both
 6. Changes the color scheme and format into a graphical identity that you 
-   like and are happy with. Be as creative as you want.
+   like and are happy with. Be as creative as you want
 
 Write three sentences under the plot:
 
@@ -51,15 +56,6 @@ Write three sentences under the plot:
 - Why is interpolating across empty cells dangerous on a $0.50 strike grid for a name like UUUU?
 - Which field will you treat as the mark next week, and which field will you treat as evidence that someone traded?
 
-and think to yourself:
-- On a strike that has a mid quote and no print, what price would you actually 
-  get filled at? (You do not know. That is the answer. You can take a shot 
-  at this but it won't be graded until Homework 1.2 is turned in)
-
-The site must render from your GitHub repo. Checkpoint is a live demo, not a 
-finished publish. Just get as far as you can becuase its a great chance to 
-ask questions. Distance students: send a teams message to the instructors 
-and we'll schedule your three minutes!
 
 ## The two prices you are not allowed to confuse
 
@@ -67,35 +63,6 @@ and we'll schedule your three minutes!
 - `MID_PRICE` — the closing **NBBO midpoint** — `(bid + ask) / 2` at the exchange close. LSEG does not expose a true exchange settlement price for expired US equity options (the `SETTLE` field returns *"universe does not support"* on this RIC space, and `TR.SettlementPrice` comes back empty), so `MID_PRICE` is the closest mark-of-the-close we get. Exists on far more series than trades. On a name that barely trades it is still a mid of a possibly-stale quote.
 
 If you feed `TRDPRC_1` into a surface and then read prices off the holes, you are pricing off prints that did not happen.
-
-## What the 3D plot is doing
-
-- **X** strike, **Y** days to expiry, **Z** option price in dollars.
-- Cyan: `MID_PRICE`.
-- Magenta diamonds: `TRDPRC_1`.
-- Translucent sheet: linear interpolation of the mids. That sheet is **not** the market. Toggle it off.
-
-The occupancy heatmaps underneath are the honest picture. Dark cells never had a number.
-
-## Files in this lab
-
-When you build this, make sure it has the following file structure. * can be 
-whatever you want it to be; e.g., "homework1", or nothing, but there must be a 
-`*app.py`, a `*data.pkl` for your data, `*utils.py` for your workhorse 
-functions, and a `*plot.py` for your plotting code.
-
-| File        | What it is                                                                                                      |
-|-------------|-----------------------------------------------------------------------------------------------------------------|
-| `*app.py`   | Reflex page. Keep `option_surface_utils.py` and `option_surface_plots.py` next to it.                           |
-| `*data.pkl` | Your LSEG cache. Used if present. If missing, the app synthesizes a sparse UUUU-like panel so you can still plot. |
-| `*utils.py` | Helper functions                                                                                                |
-| `*plot.py`  | Contains all your plots
-You can also output a `preview.html` file if Reflex is being annoying and 
-you find it helpful.
-
-Starter script builds RICs synthetically. It does **not** query the 
-derivatives chain. That endpoint does not reliably return expired contracts. 
-Do not spend time on it unless you enjoy frustration.
 
 ## Helpful guidance
 
@@ -123,27 +90,13 @@ Example: `UUUUA1502601250.U^A26` is the UUUU 15-Jan-2026 **call** struck at $12.
 
 Synthetic construction means many of the RICs you generate never existed. Request in batches, tolerate failures, fall back to single RICs when a batch throws. The starter already does this.
 
-### Two things to be aware of
+### Three things to be aware of
 
 - The starter generates a candidate for every Friday in the window. If your name only lists monthlies, most of those come back empty. That is expected.
 - If the underlying split inside your window, the synthetic RICs will not find the adjusted contracts. Check. If it split, pick something else.
 
 If the pull is uncomfortably slow, the starter is taking the high and low across the **entire** window and generating every strike in between for every expiry. Banding strikes per expiry cuts the request count a lot. Optional, but it will save you time.
-
-## Stretch (not required)
-
-- Slice by moneyness (`K / S`) instead of raw strike so two dates are comparable.
-- Invert Black–Scholes on the mids to get a crude IV surface. Use a constant rate. Write down what you assumed. Next week: that IV still is not the price you can trade.
-- Overlay the underlying close on the as-of date as a vertical plane at `K = S`.
-
-## Do not
-
-- Do not treat a linearly interpolated sheet as bid or ask.
-- Do not drop rows with missing `TRDPRC_1` and then claim the remaining cloud is “the” surface.
-- Do not use `CLOSE` and `MID_PRICE` as synonyms without checking the field list. This pull requests `TRDPRC_1` and `MID_PRICE` only. `SETTLE` is a futures-market field and does not resolve on expired US equity option RICs.
-- Do not spend time on the LSEG derivatives-chain endpoint for expired contracts. It has already been tried.
-
-## Appendix A — OPRA month codes
+#### OPRA month codes
 
 | Month | Call | Put |
 |---|---|---|
