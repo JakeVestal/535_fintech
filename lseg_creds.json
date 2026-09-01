@@ -1,0 +1,12 @@
+{
+    "sessions": {
+        "default": "platform.ldp",
+        "platform": {
+            "ldp": {
+                "app-key": "YOUR_APP_KEY_HERE",
+                "username": "YOUR_LSEG_MACHINE_USERNAME",
+                "password": "YOUR_LSEG_MACHINE_PASSWORD"
+            }
+        }
+    }
+}
