@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MENG FinTech · Algorithmic Trading II — Assignment 1.1 Option Surface Lab</title>
+</head>
+<body>
+
+<h1>MENG FinTech · Algorithmic Trading II</h1>
+<h1>Assignment 1.1 — Option Surface Lab</h1>
+
+<table>
+  <tr>
+    <th>Field</th>
+    <th>Value</th>
+  </tr>
+  <tr>
+    <td>Assigned</td>
+    <td>Class 1</td>
+  </tr>
+  <tr>
+    <td>Checkpoint</td>
+    <td>Start of Class 2 — 3-minute live demo. Show progress, ask questions. The site does not have to be published yet.</td>
+  </tr>
+  <tr>
+    <td>Due</td>
+    <td>Friday, Sep 04 at midnight</td>
+  </tr>
+  <tr>
+    <td>Collaboration</td>
+    <td>Discussion encouraged. Code must be yours (AI-assisted is yours).</td>
+  </tr>
+  <tr>
+    <td>AI use</td>
+    <td>Fully permitted and expected. You own every line you submit.</td>
+  </tr>
+  <tr>
+    <td>Submission</td>
+    <td>Push to your GitHub repo; the site must render. Submit the link on Canvas.</td>
+  </tr>
+</table>
+
+<p>This is the first layer of an app that will keep growing all semester. Every homework adds something to the same site.</p>
+
+<p>The job this week is options data — including <strong>expired</strong> contracts — plus the workflow you will use for the rest of the course.</p>
+
+<blockquote>
+  <p><strong>What you are actually going to discover:</strong> options data is sparse. Many of the contracts you want have no price on the day you want it for the strike you want. That is the nature of the instrument. Simulating a realistic fill on an option that barely trades requires the volatility surface, which is next week. For example, what was the price of the near-the-money contract on <em>morning</em>, not the close?</p>
+  <p>This week you only need to <em>see</em> the holes. For the next assignment we will fold in the volatility surface and calculate reasonable simulated fills.</p>
+</blockquote>
+
+<h2>Learning objectives</h2>
+<ul>
+  <li>Pull and cache historical prices for expired option contracts.</li>
+  <li>Treat options data as sparse and misleading, not as a filled sheet.</li>
+  <li>Build an interactive app with charts and widget switches.</li>
+  <li>See, concretely, where the data runs out.</li>
+</ul>
+
+<h2>What to turn in</h2>
+<p>A link to your GitHub Pages hosted site that contains a working version of your app. You can serve it as an html file like we discussed in class, or you can take a few extra steps and deploy the frontend portion of your app. Your choice, but the html file is probably simplest.</p>
+<p>Your app must support the following functionality:</p>
+<ol>
+  <li>Loads the cached LSEG pickle containing your fetched data</li>
+  <li>Parses each RIC into <code>{underlying, expiry, put/call, strike}</code> and a tidy long table: one row per contract per date. <code>parse_option_ric()</code> already knows the scheme in Appendix A.</li>
+  <li>Shows a 3D figure of puts or calls for one as-of date. An example has been provided for you, yours may differ</li>
+  <li>Plots <strong>both</strong> <code>MID_PRICE</code> and <code>TRDPRC_1</code> so a stranger can see they are not the same series</li>
+  <li>Prints two numbers on the page:
+    <ul>
+      <li>percent of listed series that day with a mid and <strong>no</strong> trade</li>
+      <li>median <code>|MID_PRICE − TRDPRC_1|</code> on series that have both</li>
+    </ul>
+  </li>
+  <li>Changes the color scheme and format into a graphical identity that you like and are happy with. Be as creative as you want</li>
+</ol>
+
+<p>Write three sentences under the plot:</p>
+<ul>
+  <li>Where is the cloud of price data dense, and where is it empty?</li>
+  <li>Why is interpolating across empty cells dangerous on a $0.50 strike grid for a name like UUUU?</li>
+  <li>Which field will you treat as the mark next week, and which field will you treat as evidence that someone traded?</li>
+</ul>
+
+<h2>The two prices you are not allowed to confuse</h2>
+<ul>
+  <li><code>TRDPRC_1</code> — last <strong>trade</strong> on that RIC that day. Missing on most listed strikes. When it exists it is one print, not a mark.</li>
+  <li><code>MID_PRICE</code> — the closing <strong>NBBO midpoint</strong> — <code>(bid + ask) / 2</code> at the exchange close. LSEG does not expose a true exchange settlement price for expired US equity options (the <code>SETTLE</code> field returns <em>"universe does not support"</em> on this RIC space, and <code>TR.SettlementPrice</code> comes back empty), so <code>MID_PRICE</code> is the closest mark-of-the-close we get. Exists on far more series than trades. On a name that barely trades it is still a mid of a possibly-stale quote.</li>
+</ul>
+
+<p>If you feed <code>TRDPRC_1</code> into a surface and then read prices off the holes, you are pricing off prints that did not happen.</p>
+
+<h2>Helpful guidance</h2>
+
+<h3>Parse the RICs</h3>
+<p>The options frame comes back with RIC strings as column names. Turn each one into <code>(underlying, expiry, type, strike)</code> and melt to long format.</p>
+<p>The starter builds identifiers instead of walking a chain, because the chain endpoint fails on expired contracts.</p>
+
+<pre><code>{ROOT}{M}{DD}{YY}{SSSSS}.U^{M}{YY}</code></pre>
+
+<table>
+  <tr>
+    <th>Element</th>
+    <th>Meaning</th>
+  </tr>
+  <tr>
+    <td><code>ROOT</code></td>
+    <td>Underlying root, uppercase (e.g. <code>UUUU</code>)</td>
+  </tr>
+  <tr>
+    <td><code>M</code></td>
+    <td>Month letter: <code>A–L</code> = Jan–Dec <strong>calls</strong>; <code>M–X</code> = Jan–Dec <strong>puts</strong></td>
+  </tr>
+  <tr>
+    <td><code>DD</code></td>
+    <td>Two-digit expiration day</td>
+  </tr>
+  <tr>
+    <td><code>YY</code></td>
+    <td>Two-digit year</td>
+  </tr>
+  <tr>
+    <td><code>SSSSS</code></td>
+    <td>Strike × 100, zero-padded to five digits (<code>$12.50</code> → <code>01250</code>)</td>
+  </tr>
+  <tr>
+    <td><code>.U</code></td>
+    <td>Exchange / venue qualifier</td>
+  </tr>
+  <tr>
+    <td><code>^{M}{YY}</code></td>
+    <td>Expired-contract suffix; repeats the month letter and year</td>
+  </tr>
+</table>
+
+<p>Example: <code>UUUUA1502601250.U^A26</code> is the UUUU 15-Jan-2026 <strong>call</strong> struck at $12.50.</p>
+
+<p>Synthetic construction means many of the RICs you generate never existed. Request in batches, tolerate failures, fall back to single RICs when a batch throws. The starter already does this.</p>
+
+<h3>Three things to be aware of</h3>
+<ul>
+  <li>The starter generates a candidate for every Friday in the window. If your name only lists monthlies, most of those come back empty. That is expected.</li>
+  <li>If the underlying split inside your window, the synthetic RICs will not find the adjusted contracts. Check. If it split, pick something else.</li>
+</ul>
+
+<p>If the pull is uncomfortably slow, the starter is taking the high and low across the <strong>entire</strong> window and generating every strike in between for every expiry. Banding strikes per expiry cuts the request count a lot. Optional, but it will save you time.</p>
+
+<h3>OPRA month codes</h3>
+<table>
+  <tr>
+    <th>Month</th>
+    <th>Call</th>
+    <th>Put</th>
+  </tr>
+  <tr><td>Jan</td><td>A</td><td>M</td></tr>
+  <tr><td>Feb</td><td>B</td><td>N</td></tr>
+  <tr><td>Mar</td><td>C</td><td>O</td></tr>
+  <tr><td>Apr</td><td>D</td><td>P</td></tr>
+  <tr><td>May</td><td>E</td><td>Q</td></tr>
+  <tr><td>Jun</td><td>F</td><td>R</td></tr>
+  <tr><td>Jul</td><td>G</td><td>S</td></tr>
+  <tr><td>Aug</td><td>H</td><td>T</td></tr>
+  <tr><td>Sep</td><td>I</td><td>U</td></tr>
+  <tr><td>Oct</td><td>J</td><td>V</td></tr>
+  <tr><td>Nov</td><td>K</td><td>W</td></tr>
+  <tr><td>Dec</td><td>L</td><td>X</td></tr>
+</table>
+
+</body>
+</html>
