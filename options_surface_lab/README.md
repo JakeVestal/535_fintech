@@ -1,6 +1,6 @@
 # MENG FinTech · Algorithmic Trading II
 
-# Assignment 1.1 — The Covered Call
+# Assignment 1.1 — Option Surface Lab
 
 | Field | Value |
 |---|---|
@@ -38,21 +38,21 @@ A Reflex page (AI is allowed and expected) that:
 1. Loads the cached LSEG frame. Do not re-pull unless the pickle is missing.
 2. Parses each RIC into `{underlying, expiry, put/call, strike}` and a tidy long table: one row per contract per date. `parse_option_ric()` already knows the scheme in Appendix A.
 3. Shows a 3D figure of puts or calls for one as-of date.
-4. Plots **both** `SETTLE` and `TRDPRC_1` so a stranger can see they are not the same series.
+4. Plots **both** `MID_PRICE` and `TRDPRC_1` so a stranger can see they are not the same series.
 5. Prints two numbers on the page:
-   - percent of listed series that day with a settle and **no** trade
-   - median `|SETTLE − TRDPRC_1|` on series that have both
+   - percent of listed series that day with a mid and **no** trade
+   - median `|MID_PRICE − TRDPRC_1|` on series that have both
 6. Changes the color scheme and format into a graphical identity that you 
    like and are happy with. Be as creative as you want.
 
-Write thee sentences under the plot:
+Write three sentences under the plot:
 
 - Where is the cloud of price data dense, and where is it empty?
 - Why is interpolating across empty cells dangerous on a $0.50 strike grid for a name like UUUU?
 - Which field will you treat as the mark next week, and which field will you treat as evidence that someone traded?
 
 and think to yourself:
-- On a strike that has a settle and no print, what price would you actually 
+- On a strike that has a mid quote and no print, what price would you actually 
   get filled at? (You do not know. That is the answer. You can take a shot 
   at this but it won't be graded until Homework 1.2 is turned in)
 
@@ -64,16 +64,16 @@ and we'll schedule your three minutes!
 ## The two prices you are not allowed to confuse
 
 - `TRDPRC_1` — last **trade** on that RIC that day. Missing on most listed strikes. When it exists it is one print, not a mark.
-- `SETTLE` — exchange **settlement / official mark**. Exists on far more series than trades. Used for margining and for “the close.” On a name that barely trades it is still a model-ish number.
+- `MID_PRICE` — the closing **NBBO midpoint** — `(bid + ask) / 2` at the exchange close. LSEG does not expose a true exchange settlement price for expired US equity options (the `SETTLE` field returns *"universe does not support"* on this RIC space, and `TR.SettlementPrice` comes back empty), so `MID_PRICE` is the closest mark-of-the-close we get. Exists on far more series than trades. On a name that barely trades it is still a mid of a possibly-stale quote.
 
 If you feed `TRDPRC_1` into a surface and then read prices off the holes, you are pricing off prints that did not happen.
 
 ## What the 3D plot is doing
 
 - **X** strike, **Y** days to expiry, **Z** option price in dollars.
-- Cyan: `SETTLE`.
+- Cyan: `MID_PRICE`.
 - Magenta diamonds: `TRDPRC_1`.
-- Translucent sheet: linear interpolation of the settles. That sheet is **not** the market. Toggle it off.
+- Translucent sheet: linear interpolation of the mids. That sheet is **not** the market. Toggle it off.
 
 The occupancy heatmaps underneath are the honest picture. Dark cells never had a number.
 
@@ -133,14 +133,14 @@ If the pull is uncomfortably slow, the starter is taking the high and low across
 ## Stretch (not required)
 
 - Slice by moneyness (`K / S`) instead of raw strike so two dates are comparable.
-- Invert Black–Scholes on the settles to get a crude IV surface. Use a constant rate. Write down what you assumed. Next week: that IV still is not the price you can trade.
+- Invert Black–Scholes on the mids to get a crude IV surface. Use a constant rate. Write down what you assumed. Next week: that IV still is not the price you can trade.
 - Overlay the underlying close on the as-of date as a vertical plane at `K = S`.
 
 ## Do not
 
 - Do not treat a linearly interpolated sheet as bid or ask.
 - Do not drop rows with missing `TRDPRC_1` and then claim the remaining cloud is “the” surface.
-- Do not use `CLOSE` and `SETTLE` as synonyms without checking the field list. This pull requested `TRDPRC_1` and `SETTLE` only.
+- Do not use `CLOSE` and `MID_PRICE` as synonyms without checking the field list. This pull requests `TRDPRC_1` and `MID_PRICE` only. `SETTLE` is a futures-market field and does not resolve on expired US equity option RICs.
 - Do not spend time on the LSEG derivatives-chain endpoint for expired contracts. It has already been tried.
 
 ## Appendix A — OPRA month codes

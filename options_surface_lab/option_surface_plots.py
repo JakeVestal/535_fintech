@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from option_surface_utils import surface_grid
+from .option_surface_utils import surface_grid
 
 
 DARK = dict(
@@ -52,7 +52,7 @@ def candlestick_figure(df_stock: pd.DataFrame, ticker: str) -> go.Figure:
         height=420,
         annotations=[
             dict(
-                text="Close field is TRDPRC_1 (last trade) — not an option settle",
+                text="Close field is TRDPRC_1 (last trade) — not an option mid",
                 xref="paper",
                 yref="paper",
                 x=0.0,
@@ -80,7 +80,7 @@ def price_surface_figure(
     asof,
     cp: str = "C",
     show_trade: bool = True,
-    show_settle: bool = True,
+    show_mid: bool = True,
     show_interpolated: bool = True,
     ticker: str = "UUUU",
 ) -> go.Figure:
@@ -114,15 +114,15 @@ def price_surface_figure(
             tickfont=dict(size=10, family="Inter, system-ui, sans-serif"),
         )
 
-    if show_settle and sl["SETTLE"].notna().any():
-        s = sl.dropna(subset=["SETTLE"])
+    if show_mid and sl["MID_PRICE"].notna().any():
+        s = sl.dropna(subset=["MID_PRICE"])
         fig.add_trace(
             go.Scatter3d(
                 x=s["strike"],
                 y=s["dte"],
-                z=s["SETTLE"],
+                z=s["MID_PRICE"],
                 mode="markers",
-                name="SETTLE",
+                name="MID_PRICE",
                 marker=dict(
                     size=4,
                     color="#00ffcc",
@@ -131,14 +131,14 @@ def price_surface_figure(
                     line=dict(width=0),
                 ),
                 hovertemplate=(
-                    "<b>SETTLE</b> $%{z:.3f}<br>K=%{x:.2f}<br>DTE=%{y}"
+                    "<b>MID_PRICE</b> $%{z:.3f}<br>K=%{x:.2f}<br>DTE=%{y}"
                     "<br>%{customdata[0]}<extra></extra>"
                 ),
                 customdata=np.stack([s["ric"].astype(str), s["cp"].astype(str)], axis=1),
             )
         )
         if show_interpolated:
-            grid = surface_grid(s, "SETTLE")
+            grid = surface_grid(s, "MID_PRICE")
             if grid is not None:
                 fig.add_trace(
                     go.Surface(
@@ -224,7 +224,7 @@ def price_surface_figure(
         margin=dict(l=10, r=10, t=56, b=10),
         annotations=[
             dict(
-                text="Cyan = exchange SETTLE &nbsp;·&nbsp; Magenta = last trade (TRDPRC_1) &nbsp;·&nbsp; Sheet is interpolated, not a market",
+                text="Cyan = closing NBBO mid (MID_PRICE) &nbsp;·&nbsp; Magenta = last trade (TRDPRC_1) &nbsp;·&nbsp; Sheet is interpolated, not a market",
                 xref="paper",
                 yref="paper",
                 x=0.0,
@@ -239,15 +239,15 @@ def price_surface_figure(
     return fig
 
 
-def settle_vs_trade_figure(wide: pd.DataFrame, asof=None, ticker: str = "UUUU") -> go.Figure:
+def mid_vs_trade_figure(wide: pd.DataFrame, asof=None, ticker: str = "UUUU") -> go.Figure:
     sl = wide.copy()
     if asof is not None and len(sl):
         sl = sl[sl["date"] == pd.Timestamp(asof).normalize()]
-    both = sl.dropna(subset=["TRDPRC_1", "SETTLE"])
+    both = sl.dropna(subset=["TRDPRC_1", "MID_PRICE"])
     fig = make_subplots(
         rows=1,
         cols=2,
-        subplot_titles=("SETTLE vs TRDPRC_1", "Who actually printed?"),
+        subplot_titles=("MID_PRICE vs TRDPRC_1", "Who actually printed?"),
         horizontal_spacing=0.12,
         vertical_spacing=0.08,
     )
@@ -257,7 +257,7 @@ def settle_vs_trade_figure(wide: pd.DataFrame, asof=None, ticker: str = "UUUU") 
         fig.add_trace(
             go.Scatter(
                 x=both["TRDPRC_1"],
-                y=both["SETTLE"],
+                y=both["MID_PRICE"],
                 mode="markers",
                 marker=dict(size=7, color=color, opacity=0.85),
                 customdata=np.stack(
@@ -270,7 +270,7 @@ def settle_vs_trade_figure(wide: pd.DataFrame, asof=None, ticker: str = "UUUU") 
                     axis=1,
                 ),
                 hovertemplate=(
-                    "trade $%{x:.3f}  settle $%{y:.3f}"
+                    "trade $%{x:.3f}  mid $%{y:.3f}"
                     "<br>%{customdata[3]} K=%{customdata[1]} DTE=%{customdata[2]}"
                     "<br>%{customdata[0]}<extra></extra>"
                 ),
@@ -280,8 +280,8 @@ def settle_vs_trade_figure(wide: pd.DataFrame, asof=None, ticker: str = "UUUU") 
             row=1,
             col=1,
         )
-        lo = float(min(both["TRDPRC_1"].min(), both["SETTLE"].min()))
-        hi = float(max(both["TRDPRC_1"].max(), both["SETTLE"].max()))
+        lo = float(min(both["TRDPRC_1"].min(), both["MID_PRICE"].min()))
+        hi = float(max(both["TRDPRC_1"].max(), both["MID_PRICE"].max()))
         pad = (hi - lo) * 0.06 if hi > lo else 0.05
         fig.add_trace(
             go.Scatter(
@@ -298,17 +298,17 @@ def settle_vs_trade_figure(wide: pd.DataFrame, asof=None, ticker: str = "UUUU") 
         fig.update_xaxes(range=[lo - pad, hi + pad], row=1, col=1)
         fig.update_yaxes(range=[lo - pad, hi + pad], row=1, col=1)
 
-    n_settle_only = int((sl["has_settle"] & ~sl["has_trade"]).sum())
-    n_both = int((sl["has_settle"] & sl["has_trade"]).sum())
-    n_trade_only = int((sl["has_trade"] & ~sl["has_settle"]).sum())
-    ymax = max(n_settle_only, n_both, n_trade_only, 1)
+    n_mid_only = int((sl["has_mid"] & ~sl["has_trade"]).sum())
+    n_both = int((sl["has_mid"] & sl["has_trade"]).sum())
+    n_trade_only = int((sl["has_trade"] & ~sl["has_mid"]).sum())
+    ymax = max(n_mid_only, n_both, n_trade_only, 1)
     fig.add_trace(
         go.Bar(
-            x=["Settle only", "Both", "Print only"],
-            y=[n_settle_only, n_both, n_trade_only],
+            x=["Mid only", "Both", "Print only"],
+            y=[n_mid_only, n_both, n_trade_only],
             marker_color=["#00ffcc", "#58a6ff", "#ff0055"],
             showlegend=False,
-            text=[n_settle_only, n_both, n_trade_only],
+            text=[n_mid_only, n_both, n_trade_only],
             textposition="inside",
             textfont=dict(color="#0d1117", size=12),
             cliponaxis=False,
@@ -328,7 +328,7 @@ def settle_vs_trade_figure(wide: pd.DataFrame, asof=None, ticker: str = "UUUU") 
         tickfont=dict(size=11),
     )
     fig.update_yaxes(
-        title_text="SETTLE ($)",
+        title_text="MID_PRICE ($)",
         row=1,
         col=1,
         gridcolor="#30363d",
@@ -351,7 +351,7 @@ def settle_vs_trade_figure(wide: pd.DataFrame, asof=None, ticker: str = "UUUU") 
         plot_bgcolor="#161b22",
         font=dict(color="#e6edf3", family="Inter, system-ui, sans-serif", size=12),
         title=dict(
-            text=f"{ticker}  ·  last trade is not the settle",
+            text=f"{ticker}  ·  last trade is not the closing mid",
             font=dict(size=16, family="Inter, system-ui, sans-serif"),
             x=0.02,
             xanchor="left",
@@ -400,8 +400,12 @@ def coverage_heatmap(wide: pd.DataFrame, asof, cp: str = "C", field: str = "TRDP
 
     sl = sl.copy()
     sl["expiry_label"] = sl["expiry"].dt.strftime("%b ") + sl["expiry"].dt.day.astype(int).astype(str)
-    val = sl[field] if field in sl.columns else sl["SETTLE"]
-    sl["_hit"] = val.notna().astype(int)
+    if field not in sl.columns:
+        raise ValueError(
+            f"coverage_heatmap: requested field {field!r} not in the wide frame "
+            f"(columns: {list(sl.columns)}). Refusing to silently substitute another."
+        )
+    sl["_hit"] = sl[field].notna().astype(int)
     pivot = sl.pivot_table(index="expiry_label", columns="strike", values="_hit", aggfunc="max")
     # keep expiry order chronological, not alpha on "Oct"/"Sep"
     order = (
@@ -412,7 +416,7 @@ def coverage_heatmap(wide: pd.DataFrame, asof, cp: str = "C", field: str = "TRDP
     pivot = pivot.reindex(order, axis=0)
     pivot = pivot.reindex(sorted(pivot.columns), axis=1)
 
-    accent = "#00ffcc" if field == "SETTLE" else "#ff0055"
+    accent = "#00ffcc" if field == "MID_PRICE" else "#ff0055"
     fig = go.Figure(
         data=go.Heatmap(
             z=pivot.values,
