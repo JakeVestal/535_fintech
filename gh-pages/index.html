@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Options Surface Lab</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="data.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Inter, system-ui, sans-serif;
+      background: #0d1117; color: #e6edf3; padding: 2rem;
+    }
+    h1 { color: #00ffcc; letter-spacing: 2px; font-weight: 700; margin: 0; }
+    .row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .metric {
+      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+      padding: 1rem 1.25rem; min-width: 9rem;
+    }
+    .metric .lbl { color: #8b949e; font-size: 13px; }
+    .metric .val { color: #00ffcc; font-size: 22px; font-weight: 700; }
+    .pane {
+      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+      padding: 0.75rem; margin-top: 1rem;
+    }
+    .heats { display: flex; gap: 0.75rem; }
+    .heats .pane { flex: 1; min-width: 280px; }
+    label { color: #8b949e; font-size: 13px; margin-right: 0.35rem; }
+    select, input[type=date] {
+      background: #161b22; color: #e6edf3; border: 1px solid #30363d;
+      border-radius: 6px; padding: 0.35rem 0.5rem;
+    }
+    .note { color: #8b949e; font-size: 13px; margin: 0.75rem 0; }
+    .badge { background: #0e7490; color: white; border-radius: 999px; padding: 0.2rem 0.7rem; font-size: 12px; }
+    @media (max-width: 800px) { .heats { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <div class="row" style="margin-bottom:1rem">
+    <h1>OPTIONS SURFACE LAB</h1>
+    <span style="flex:1"></span>
+    <span class="badge" id="status">static snapshot</span>
+  </div>
+  <p class="note" id="note"></p>
+  <div class="row" id="metrics"></div>
+  <div class="pane"><div id="fig_stock" style="height:420px"></div></div>
+  <div class="row" style="margin-top:1rem">
+    <label>As-of date</label>
+    <input type="date" id="asof"/>
+    <label>Right</label>
+    <select id="cp"><option value="C">C</option><option value="P">P</option></select>
+    <label><input type="checkbox" id="show_mid" checked/> <span style="color:#00ffcc">MID_PRICE</span></label>
+    <label><input type="checkbox" id="show_trade" checked/> <span style="color:#ff0055">TRDPRC_1</span></label>
+    <label><input type="checkbox" id="show_sheet" checked/> Interpolated sheet</label>
+  </div>
+  <p class="note">
+    Cyan = closing NBBO mid (MID_PRICE). Magenta = last trade (TRDPRC_1).
+    The translucent sheet is linearly interpolated and will invent prices in
+    strikes that never printed. Turn it off.
+  </p>
+  <div class="pane"><div id="fig_surface" style="height:640px"></div></div>
+  <div class="pane"><div id="fig_compare" style="height:460px"></div></div>
+  <div class="heats">
+    <div class="pane"><div id="fig_heat_mid" style="height:380px"></div></div>
+    <div class="pane"><div id="fig_heat_trade" style="height:380px"></div></div>
+  </div>
+<script>
+const D = window.SURFACE_LAB;
+const $ = (id) => document.getElementById(id);
+
+function metric(label, value) {
+  return `<div class="metric"><div class="lbl">${label}</div><div class="val">${value}</div></div>`;
+}
+
+function snapDate(value) {
+  const dates = D.dates;
+  if (dates.includes(value)) return value;
+  const t = Date.parse(value);
+  let best = dates[0], bestAbs = Infinity;
+  for (const d of dates) {
+    const a = Math.abs(Date.parse(d) - t);
+    if (a < bestAbs) { bestAbs = a; best = d; }
+  }
+  return best;
+}
+
+function restyleSurface(fig) {
+  if (!fig || !fig.data) return fig;
+  const mid = $("show_mid").checked;
+  const trd = $("show_trade").checked;
+  const sheet = $("show_sheet").checked;
+  fig.data.forEach((tr) => {
+    const n = (tr.name || "").toUpperCase();
+    if (n.includes("MID")) tr.visible = mid;
+    else if (n.includes("TRD") || n.includes("TRADE")) tr.visible = trd;
+    else if (n.includes("SHEET") || n.includes("INTERPOL") || tr.type === "surface") tr.visible = sheet;
+  });
+  return fig;
+}
+
+function render() {
+  const asof = snapDate($("asof").value);
+  if ($("asof").value !== asof) $("asof").value = asof;
+  const cp = $("cp").value;
+  const key = asof + "|" + cp;
+  const panel = D.panels[key];
+  const stats = panel ? panel.stats : {};
+  $("note").textContent = "Static snapshot from " + (D.fetched_at || "cache") + " — no LSEG live pull.";
+  $("metrics").innerHTML = [
+    metric("Underlying", D.ticker),
+    metric("Option series", D.option_count),
+    metric("Quotes on as-of date", stats.n_quotes ?? "—"),
+    metric("Mid with no print", stats.n_mid_only ?? "—"),
+    metric("Median |mid − trade|", stats.median_gap ?? "—"),
+  ].join("");
+  Plotly.react("fig_stock", D.stock.data, D.stock.layout, {responsive: true, displaylogo: false});
+  if (!panel) return;
+  Plotly.react("fig_surface", restyleSurface(panel.surface).data, panel.surface.layout, {responsive: true, displaylogo: false});
+  Plotly.react("fig_compare", panel.compare.data, panel.compare.layout, {responsive: true, displaylogo: false});
+  Plotly.react("fig_heat_mid", panel.heat_mid.data, panel.heat_mid.layout, {responsive: true, displaylogo: false});
+  Plotly.react("fig_heat_trade", panel.heat_trade.data, panel.heat_trade.layout, {responsive: true, displaylogo: false});
+}
+
+$("asof").min = D.dates[0];
+$("asof").max = D.dates[D.dates.length - 1];
+$("asof").value = D.default_asof;
+["asof","cp","show_mid","show_trade","show_sheet"].forEach((id) => $(id).addEventListener("change", render));
+render();
+</script>
+</body>
+</html>

@@ -21,6 +21,7 @@ import datetime
 import os
 import pickle
 import re
+import traceback
 import warnings
 
 import numpy as np
@@ -280,13 +281,22 @@ def _stamp_cp_from_body(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def _normalize_ts_index(idx) -> pd.DatetimeIndex:
-    dt = pd.to_datetime(idx)
-    try:
-        dt = dt.tz_localize(None)
-    except TypeError:
+def _as_naive_midnight(values) -> pd.DatetimeIndex:
+    """Coerce any date-like sequence to tz-naive midnight. Never call
+    tz_localize on a RangeIndex — that is the TypeError we just hit."""
+    if isinstance(values, pd.Series):
+        s = pd.to_datetime(values, errors="coerce")
+        tz = getattr(getattr(s, "dt", None), "tz", None)
+        if tz is not None:
+            s = s.dt.tz_convert("UTC").dt.tz_localize(None)
+        return pd.DatetimeIndex(s).normalize()
+    idx = pd.Index(values)
+    dt = pd.to_datetime(idx, errors="coerce")
+    if not isinstance(dt, pd.DatetimeIndex):
+        dt = pd.DatetimeIndex(dt)
+    if dt.tz is not None:
         dt = dt.tz_convert("UTC").tz_localize(None)
-    return pd.DatetimeIndex(dt).normalize()
+    return dt.normalize()
 
 
 def _flat_stock(stock: pd.DataFrame) -> pd.DataFrame:
@@ -296,7 +306,7 @@ def _flat_stock(stock: pd.DataFrame) -> pd.DataFrame:
         out.columns = [str(c).upper() for c in out.columns.get_level_values(-1)]
     else:
         out.columns = [str(c).upper() for c in out.columns]
-    out.index = _normalize_ts_index(out.index)
+    out.index = _as_naive_midnight(out.index)
     out.index.name = "date"
     for col in out.columns:
         out[col] = pd.to_numeric(out[col], errors="coerce")
@@ -308,36 +318,108 @@ def _align_tidy_dates(tidy: pd.DataFrame) -> pd.DataFrame:
     date_col = next((c for c in ("date", "Date", "DATE") if c in out.columns), None)
     if date_col is None:
         return out
-    out[date_col] = _normalize_ts_index(out[date_col])
+    out[date_col] = _as_naive_midnight(out[date_col])
     if date_col != "date":
         out = out.rename(columns={date_col: "date"})
     return out
 
 
+def _flatten_options_local(options: pd.DataFrame) -> pd.DataFrame:
+    """Melt LSEG (date × (RIC, field)) into tidy rows. Does not touch tz."""
+    df = options.copy()
+    df.index = _as_naive_midnight(df.index)
+    df.index.name = "date"
+    pieces = []
+    if isinstance(df.columns, pd.MultiIndex):
+        pairs = list(df.columns)
+    else:
+        pairs = [(c, "VALUE") for c in df.columns]
+    for ric, field in pairs:
+        col = df.loc[:, (ric, field)] if isinstance(df.columns, pd.MultiIndex) else df[ric]
+        ser = pd.to_numeric(col, errors="coerce").dropna()
+        if ser.empty:
+            continue
+        piece = ser.rename("value").to_frame()
+        piece["ric"] = str(ric)
+        piece["field"] = str(field).upper()
+        pieces.append(piece.reset_index())
+    if not pieces:
+        raise RuntimeError("No option quotes after flattening the LSEG panel.")
+    long = pd.concat(pieces, ignore_index=True)
+    if "Date" in long.columns and "date" not in long.columns:
+        long = long.rename(columns={"Date": "date"})
+    long["date"] = _as_naive_midnight(long["date"])
+    long["cp"] = long["ric"].map(cp_from_ric)
+    parsed = long["ric"].str.upper().str.extract(_RIC_BODY)
+    if "strike" in parsed.columns:
+        long["strike"] = pd.to_numeric(parsed["strike"], errors="coerce") / 100.0
+    return long
+
+
+def _attach_spot_local(tidy: pd.DataFrame, stock: pd.DataFrame) -> pd.DataFrame:
+    """Same-session join only. No prior-close fill."""
+    out = tidy.copy()
+    if "date" not in out.columns:
+        raise RuntimeError("tidy frame has no date column")
+    spot_col = "TRDPRC_1" if "TRDPRC_1" in stock.columns else stock.columns[-1]
+    spot = pd.to_numeric(stock[spot_col], errors="coerce")
+    spot.index = _as_naive_midnight(spot.index)
+    out["date"] = _as_naive_midnight(out["date"])
+    mapped = out["date"].map(spot)
+    missing = mapped.isna()
+    if missing.any():
+        gaps = sorted({d.strftime("%Y-%m-%d") for d in out.loc[missing, "date"]})
+        print(f"[prepare] dropping {int(missing.sum())} option rows with no "
+              f"same-day stock print. Gaps: {gaps[:8]}")
+        out = out.loc[~missing].copy()
+        mapped = out["date"].map(spot)
+    out["underlying"] = mapped.to_numpy()
+    out["spot"] = out["underlying"]
+    return out
+
+
+def _pivot_trade_mid_local(tidy: pd.DataFrame) -> pd.DataFrame:
+    if "field" not in tidy.columns:
+        return tidy.copy()
+    keys = [c for c in ("date", "ric", "cp", "strike", "underlying", "spot") if c in tidy.columns]
+    wide = tidy.pivot_table(
+        index=keys,
+        columns="field",
+        values="value",
+        aggfunc="last",
+    )
+    wide.columns = [str(c).upper() for c in wide.columns]
+    return wide.reset_index()
+
+
 def _prepare(payload: dict) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
-    tidy = flatten_lseg_options(payload["options"])
-    tidy = _stamp_cp_from_body(tidy)
-    tidy = _align_tidy_dates(tidy)
+    # Package flatten/attach have been calling tz_localize on a RangeIndex.
+    # Build the panel locally so a valid LSEG pickle actually loads.
     stock = _flat_stock(payload["stock"])
     try:
+        tidy = flatten_lseg_options(payload["options"])
+        tidy = _stamp_cp_from_body(tidy)
+        tidy = _align_tidy_dates(tidy)
+    except Exception as e:
+        print(f"[prepare] package flatten failed ({type(e).__name__}: {e}); using local flatten")
+        tidy = _flatten_options_local(payload["options"])
+        tidy = _stamp_cp_from_body(tidy)
+
+    try:
         tidy = attach_underlying(tidy, stock)
-    except ValueError as e:
-        # Last resort: drop option rows whose session date is absent from
-        # the flattened stock panel. Do NOT forward-fill a prior close —
-        # that is the invariant attach_underlying is protecting.
-        msg = str(e)
-        if "no matching stock TRDPRC_1" not in msg or "date" not in tidy.columns:
-            raise
-        spot = stock["TRDPRC_1"] if "TRDPRC_1" in stock.columns else stock.iloc[:, -1]
-        keep = tidy["date"].map(spot).notna()
-        dropped = int((~keep).sum())
-        print(f"[prepare] dropping {dropped} option rows with no same-day stock print")
-        tidy = tidy.loc[keep].copy()
-        if tidy.empty:
-            raise
-        tidy = attach_underlying(tidy, stock)
-    wide = pivot_trade_mid(tidy)
+    except Exception as e:
+        print(f"[prepare] package attach failed ({type(e).__name__}: {e}); using local attach")
+        tidy = _attach_spot_local(tidy, stock)
+
+    try:
+        wide = pivot_trade_mid(tidy)
+    except Exception as e:
+        print(f"[prepare] package pivot failed ({type(e).__name__}: {e}); using local pivot")
+        wide = _pivot_trade_mid_local(tidy)
+
     wide = _stamp_cp_from_body(wide)
+    if "date" in wide.columns:
+        wide["date"] = _as_naive_midnight(wide["date"])
     return tidy, wide, payload
 
 
@@ -426,22 +508,30 @@ class State(rx.State):
             self.progress_detail = str(e)
             self.busy = False
             print(f"[load_data] FAILED: {type(e).__name__}: {e}")
+            traceback.print_exc()
             return
 
         self._wide = wide
-        self._stock = payload["stock"]
+        self._stock = _flat_stock(payload["stock"])
         self.ticker = payload.get("ticker", DEFAULT_TICKER_ROOT)
         self.option_count = int(wide["ric"].nunique()) if len(wide) else 0
         self.data_note = f"LSEG cache from {payload.get('fetched_at', '?')}"
 
-        dates = sorted({d.strftime("%Y-%m-%d") for d in wide["date"]}) if len(wide) else []
+        dates = sorted({pd.Timestamp(d).strftime("%Y-%m-%d") for d in wide["date"]}) if len(wide) else []
         self.asof_options = dates
         self.asof_min = dates[0] if dates else ""
         self.asof_max = dates[-1] if dates else ""
         # First available date — the start of the window, not the last print.
         self.asof = dates[0] if dates else ""
 
-        self.fig_stock = candlestick_figure(payload["stock"], self.ticker)
+        try:
+            self.fig_stock = candlestick_figure(self._stock, self.ticker)
+        except Exception as e:
+            print(f"[load_data] candlestick failed ({e}); drawing empty stock pane")
+            traceback.print_exc()
+            empty = go.Figure()
+            empty.update_layout(template="plotly_dark", paper_bgcolor="#0d1117")
+            self.fig_stock = empty
         self._rebuild_option_figs()
         self.status_msg = f"Loaded {self.option_count} series"
         self.progress_pct = 100
