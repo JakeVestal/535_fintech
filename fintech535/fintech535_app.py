@@ -208,6 +208,23 @@ def _prepare(payload: dict) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     return tidy, wide, payload
 
 
+def _nearest_asof(requested: str, available: list[str]) -> str:
+    """Snap a calendar pick onto the nearest date that actually has quotes."""
+    if not available:
+        return ""
+    if requested in available:
+        return requested
+    try:
+        target = datetime.date.fromisoformat(requested)
+    except ValueError:
+        return available[0]
+    best = min(
+        available,
+        key=lambda d: abs((datetime.date.fromisoformat(d) - target).days),
+    )
+    return best
+
+
 class State(rx.State):
     ticker: str = DEFAULT_TICKER_ROOT
     status_msg: str = "Ready"
@@ -220,6 +237,8 @@ class State(rx.State):
     data_note: str = ""
     asof: str = ""
     asof_options: list[str] = []
+    asof_min: str = ""
+    asof_max: str = ""
     cp: str = "C"
     show_trade: bool = True
     show_mid: bool = True
@@ -254,7 +273,10 @@ class State(rx.State):
 
         dates = sorted({d.strftime("%Y-%m-%d") for d in wide["date"]}) if len(wide) else []
         self.asof_options = dates
-        self.asof = dates[-1] if dates else ""
+        self.asof_min = dates[0] if dates else ""
+        self.asof_max = dates[-1] if dates else ""
+        # First available date — the start of the window, not the last print.
+        self.asof = dates[0] if dates else ""
 
         self.fig_stock = candlestick_figure(payload["stock"], self.ticker)
         self._rebuild_option_figs()
@@ -265,7 +287,9 @@ class State(rx.State):
         self._rebuild_option_figs()
 
     def set_asof(self, value: str):
-        self.asof = value
+        if not value:
+            return
+        self.asof = _nearest_asof(value, self.asof_options)
         self._rebuild_option_figs()
 
     def toggle_trade(self, value: bool):
@@ -335,7 +359,7 @@ def index() -> rx.Component:
         rx.vstack(
             rx.hstack(
                 rx.heading(
-                    "OPTIONS SURFACE LAB",
+                    "HW 1.1",
                     size="8",
                     color="#00ffcc",
                     style={"letter_spacing": "2px"},
@@ -376,11 +400,17 @@ def index() -> rx.Component:
             ),
             rx.hstack(
                 rx.text("As-of date", color="#8b949e", size="2"),
-                rx.select(
-                    State.asof_options,
+                rx.input(
+                    type="date",
                     value=State.asof,
+                    min=State.asof_min,
+                    max=State.asof_max,
                     on_change=State.set_asof,
                     size="2",
+                    width="11rem",
+                    bg="#161b22",
+                    color="#e6edf3",
+                    border="1px solid #30363d",
                 ),
                 rx.text("Right", color="#8b949e", size="2"),
                 rx.select(

@@ -13,6 +13,7 @@
     "mergician": "v2.0.2",
     "plotly.js": "3.7.0",
     "react": "19.2.8",
+    "react-debounce-input": "3.3.0",
     "react-dom": "19.2.8",
     "react-error-boundary": "6.1.2",
     "react-helmet": "6.1.0",
