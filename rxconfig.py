@@ -1,6 +1,6 @@
 import reflex as rx
 
 config = rx.Config(
-    app_name="options_surface_app",  # internal name; can stay
-    app_module_import="options_surface_lab.options_surface_app",
+    app_name="fintech535",
+    app_module_import="fintech535.fintech535_app",
 )

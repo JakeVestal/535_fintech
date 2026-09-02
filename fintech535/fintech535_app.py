@@ -27,13 +27,13 @@ import pandas as pd
 import plotly.graph_objects as go
 import reflex as rx
 
-from options_surface_lab.option_surface_utils import (
+from fintech535.fintech535_utils import (
     attach_underlying,
     flatten_lseg_options,
     pivot_trade_mid,
     summarize_sparsity,
 )
-from options_surface_lab.option_surface_plots import (
+from fintech535.fintech535_plots import (
     candlestick_figure,
     coverage_heatmap,
     mid_vs_trade_figure,
