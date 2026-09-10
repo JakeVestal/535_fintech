@@ -7,6 +7,7 @@ on:
       - gh-pages/**
       - option_pipeline_data.pkl
       - export_gh_pages.py
+      - .github/workflows/pages.yml
 permissions:
   contents: read
   pages: write
@@ -25,6 +26,6 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: gh-pages
+          path: gh-pages/helios
       - id: pub
         uses: actions/deploy-pages@v4
