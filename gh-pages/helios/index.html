@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Helios Tape — covered-call blotter</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <main>
+    <nav>
+      <a href="../">Option surface lab</a>
+      <a href="./">Helios blotter</a>
+    </nav>
+    <header>
+      <div>
+        <p class="kicker">Sample book · static GitHub Pages</p>
+        <h1>Covered-call blotter</h1>
+        <p class="lede">
+          Trades you actually booked, the running ledger, and Reg T accounts.
+          This page is HTML/JS/CSS plus <span class="mono">book.js</span>.
+          There is no LSEG session here — pull data locally, bake the book, push this folder.
+        </p>
+      </div>
+      <div class="badge" id="badge">SAMPLE</div>
+    </header>
+
+    <section class="grid" id="accounts"></section>
+
+    <section class="pane">
+      <div class="pane-head">
+        <div>
+          <p class="kicker">NAV</p>
+          <h2>Equity and available funds</h2>
+        </div>
+      </div>
+      <div class="chart" id="nav-chart"></div>
+    </section>
+
+    <section class="pane">
+      <div class="pane-head">
+        <div>
+          <p class="kicker">Margin</p>
+          <h2>Initial, maintenance, cash</h2>
+        </div>
+      </div>
+      <div class="chart" id="mgn-chart"></div>
+    </section>
+
+    <section class="pane">
+      <div class="pane-head">
+        <div>
+          <p class="kicker">Blotter</p>
+          <h2>Trades you actually made</h2>
+        </div>
+        <p class="lede">Buy 100 shares, write one call. Rolls are BTC + a new sell. Working orders do not belong here.</p>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th><th>Side</th><th>Qty</th><th>Instrument</th><th>Px</th><th>Cash Δ</th><th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="blotter-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="pane">
+      <div class="pane-head">
+        <div>
+          <p class="kicker">Ledger</p>
+          <h2>Position, cash, and margin over time</h2>
+        </div>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Cash</th><th>Shares</th><th>Short call</th><th>Spot</th>
+              <th>LMV</th><th>Opt MV</th><th>NAV</th><th>Initial</th><th>Maint</th><th>Available</th>
+            </tr>
+          </thead>
+          <tbody id="ledger-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="pane" id="writeup"></section>
+  </main>
+  <script src="book.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
