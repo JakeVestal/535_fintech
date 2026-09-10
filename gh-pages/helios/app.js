@@ -85,6 +85,17 @@
   }
 
   drawBookChart("book-chart", B.ledger);
+  if (B.midVsTrade && B.midVsTrade.points) drawScatter(B.midVsTrade);
+  if (B.rics && B.rics.length) {
+    const pane = document.getElementById("rics-pane");
+    const body = document.getElementById("rics-body");
+    if (pane && body) {
+      pane.hidden = false;
+      body.innerHTML = B.rics
+        .map((r) => `<tr><td>${r.label}</td><td class="mono accent">${r.ric}</td></tr>`)
+        .join("");
+    }
+  }
 
   function drawBookChart(id, rows) {
     const host = document.getElementById(id);
@@ -168,5 +179,40 @@
       show(i, ev);
     });
     svg.addEventListener("pointerleave", hide);
+  }
+
+  function drawScatter(pack) {
+    const host = document.getElementById("scatter-chart");
+    const meta = document.getElementById("scatter-meta");
+    const pts = pack.points || [];
+    if (!host || !pts.length) return;
+    const W = 720, H = 280, padL = 48, padR = 16, padT = 16, padB = 36;
+    const xs = pts.map((p) => p.mid);
+    const ys = pts.map((p) => p.trade);
+    const lo = Math.min.apply(null, xs.concat(ys)) * 0.92;
+    const hi = Math.max.apply(null, xs.concat(ys)) * 1.06;
+    const X = (v) => padL + ((v - lo) / (hi - lo || 1)) * (W - padL - padR);
+    const Y = (v) => padT + ((hi - v) / (hi - lo || 1)) * (H - padT - padB);
+    const slope = pack.slope;
+    const intercept = pack.intercept;
+    const x0 = lo, x1 = hi;
+    const y0 = slope * x0 + intercept, y1 = slope * x1 + intercept;
+    const dots = pts
+      .map((p) => `<circle class="dot" cx="${X(p.mid)}" cy="${Y(p.trade)}" r="3.2"/>`)
+      .join("");
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Trade vs mid">
+      <line x1="${X(lo)}" y1="${Y(lo)}" x2="${X(hi)}" y2="${Y(hi)}" stroke="#5e7673" stroke-dasharray="4 4"/>
+      <line x1="${X(x0)}" y1="${Y(y0)}" x2="${X(x1)}" y2="${Y(y1)}" stroke="#2ee6d0" stroke-width="1.8"/>
+      ${dots}
+      <text x="${padL}" y="${H - 10}" fill="#5e7673" font-size="10" font-family="IBM Plex Mono,monospace">MID (BID+ASK)/2</text>
+      <text x="${W - padR}" y="${H - 10}" text-anchor="end" fill="#5e7673" font-size="10" font-family="IBM Plex Mono,monospace">TRDPRC_1</text>
+    </svg>`;
+    if (meta) {
+      meta.textContent =
+        "R² = " + Number(pack.r2).toFixed(3) +
+        " · slope " + Number(slope).toFixed(3) +
+        " · n = " + pts.length +
+        "  (dashed = y=x)";
+    }
   }
 })();

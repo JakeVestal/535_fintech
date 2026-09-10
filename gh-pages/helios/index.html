@@ -18,12 +18,12 @@
   <main>
     <header class="hero">
       <div>
-        <p class="kicker">Sample book · static GitHub Pages</p>
+        <p class="kicker">Worked example · AAPL Friday weeklies · static Pages</p>
         <h1>Covered-call blotter</h1>
         <p class="lede">
-          Every fill you actually booked, the running ledger, and the Reg T accounts
-          that decide whether you can write the next ~5 DTE call. This page is HTML, CSS, JS
-          and <span class="mono">book.js</span> — no LSEG session. Replace the sample rows with your tape.
+          Baseline: Monday 09:30 combo (100 shares + short Friday weekly), limit at option mid.
+          One roll when the 17 Jul 200s finished ITM. Sample book — replace
+          <span class="mono">book.js</span> with your tape. No LSEG session on this host.
         </p>
       </div>
       <div class="badge" id="badge">SAMPLE</div>
@@ -47,13 +47,24 @@
       <div class="chart-wrap" id="book-chart"></div>
     </section>
 
+    <section class="pane" id="scatter-pane">
+      <div class="pane-head">
+        <div>
+          <p class="kicker">Midpoint assumption</p>
+          <h2>TRDPRC_1 vs (BID+ASK)/2</h2>
+        </div>
+        <p class="meta" id="scatter-meta">Near-the-money calls · Y = last, X = mid</p>
+      </div>
+      <div class="chart-wrap" id="scatter-chart"></div>
+    </section>
+
     <section class="pane">
       <div class="pane-head">
         <div>
           <p class="kicker">Blotter</p>
           <h2>Trades you actually made</h2>
         </div>
-        <p class="lede" style="margin:0;max-width:22rem">Buy 100 shares, write one call. Rolls are BTC + a new sell. Working orders do not belong here.</p>
+        <p class="lede" style="margin:0;max-width:22rem">Monday 09:30 combo; Friday expire or BTC. Limit = mid. Working orders do not belong here.</p>
       </div>
       <div class="scroll">
         <table>
@@ -89,6 +100,20 @@
     </section>
 
     <section class="pane" id="writeup"></section>
+    <section class="pane" id="rics-pane" hidden>
+      <div class="pane-head">
+        <div>
+          <p class="kicker">RICs</p>
+          <h2>Expired contracts this book queried</h2>
+        </div>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Contract</th><th>RIC</th></tr></thead>
+          <tbody id="rics-body"></tbody>
+        </table>
+      </div>
+    </section>
   </main>
   <script src="book.js"></script>
   <script src="app.js"></script>

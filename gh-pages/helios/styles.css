@@ -177,3 +177,4 @@ button {
 button.primary { border-color: var(--accent-dim); color: var(--accent); }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 .chart.tall, .chart-wrap.tall { height: 22rem; }
+.dot { fill: #2ee6d0; fill-opacity: 0.7; }

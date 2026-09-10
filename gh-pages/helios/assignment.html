@@ -21,8 +21,9 @@
         <p class="kicker">FINTECH 535 · homework</p>
         <h1>Covered call backtest</h1>
         <p class="lede">
-          Publish a static GitHub Pages site that is your book: blotter, ledger, Reg T accounts, charts, and a write-up of the rules you actually ran.
-          The site is <strong style="color:var(--fg)">100% of the grade</strong>. I will not grade a data fetcher.
+          Implement a covered-call strategy, simulate execution, and publish the book.
+          The GitHub Pages site is <strong style="color:var(--fg)">100% of the grade</strong>.
+          I grade the rules, the blotter, the Reg T accounts, and the thinking — not a data fetcher.
         </p>
       </div>
       <div class="badge">Due: as posted in Canvas</div>
@@ -31,71 +32,135 @@
     <div class="card">
       <div class="lbl">Turn in</div>
       <p class="hint" style="font-size:0.95rem;color:var(--fg);line-height:1.5">
-        Your GitHub Pages URL. Example of the expected shape:
+        Your GitHub Pages URL. Worked example (AAPL weeklies, liquid, easy to pull):
         <a href="./">jakevestal.github.io/535_fintech/</a>
       </p>
     </div>
 
-    <h2>What I am grading</h2>
-    <p>Analysis, thoughtfulness, and how you implemented the theory. Did you write a ~5 DTE covered call with explicit fill, roll, and pin rules? Does the blotter match those rules? Are Reg T numbers used like an account, not a decoration?</p>
+    <h2>What you are building</h2>
+    <p>A <strong style="color:var(--fg)">covered call</strong>: long 100 shares, short 1 call. Backtest it on one name of your choosing. Simulate fills. Track the book like a Reg T account. Publish a <strong style="color:var(--fg)">clean blotter</strong> of every entry and exit.</p>
+    <p>You must have <strong style="color:var(--fg)">clear, algorithmic rules</strong> for entering a trade and for exiting a trade (roll, buy-to-close, or let it expire). Complexity is optional. A baseline is acceptable:</p>
+    <p><strong style="color:var(--fg)">Baseline (perfectly fine):</strong> Monday open <em>or</em> Monday close, buy the covered call as a <em>combo / basket</em> (100 shares + short 1 call) with Friday expiry (~5 DTE). Limit orders. Fill the call at the bid/ask midpoint. Hold to Friday. If you add a roll rule, write it down and run it.</p>
 
-    <h2>Two surfaces</h2>
+    <h2>Pick your underlying</h2>
+    <p>Any U.S. equity (or ETF) you can pull from LSEG. Prefer a name with <strong style="color:var(--fg)">liquid weeklies</strong> so mids are tight and TRDPRC_1 actually prints — AAPL, MSFT, NVDA, SPY, QQQ, etc. Thin names make the midpoint assumption harder to defend. The worked example uses <span class="mono">AAPL</span>.</p>
+
+    <h2>Fills and limit orders</h2>
+    <p>Work <strong style="color:var(--fg)">limit orders</strong> — they are easier to model than market orders.</p>
+    <ul>
+      <li><strong style="color:var(--fg)">Default, this assignment:</strong> you get filled at the option <strong style="color:var(--fg)">mid = (BID + ASK) / 2</strong> at the timestamp of the order. Combined with intraday stock prints, that lets you price the covered-call combo any time of day.</li>
+      <li><strong style="color:var(--fg)">Optional upgrade:</strong> fit a volatility curve to multiple prints, infer a fair price, and assume that fill. If you do this, show the fit.</li>
+    </ul>
+    <p>If there is no bid/ask at that bar, you do not fill. Skip. Do not invent a print.</p>
+
+    <h2>What LSEG actually gives you (expired options)</h2>
+    <p>Intraday history on expired listed options is available, but the field set is limited. You should expect:</p>
+    <ul>
+      <li><span class="mono">BID</span> and <span class="mono">ASK</span> — treat these as always-on for this assignment.</li>
+      <li>When they exist: <span class="mono">TRDPRC_1</span>, <span class="mono">OPEN_PRC</span>, <span class="mono">HIGH_1</span>, <span class="mono">LOW_1</span>, <span class="mono">ACVOL_UNS</span>, <span class="mono">NUM_MOVES</span>.</li>
+    </ul>
+    <p>That is enough. Mid from BID/ASK is the fill. Stock OHLC/intraday is the other half of the combo. Pull the same bar size for stock and options (hourly is the right default for a ~10-week window).</p>
+    <p>Fetch <strong style="color:var(--fg)">near-the-money calls along the chain</strong> (same idea as the first homework: strikes from a bit below the stock’s low in the window to a bit above the high). Then graph <span class="mono">TRDPRC_1</span> on Y against <span class="mono">MID = (BID+ASK)/2</span> on X, fit a line, report <strong style="color:var(--fg)">R²</strong>. That is how you justify the midpoint assumption on <em>your</em> name.</p>
+
+    <h2>Entry / exit rules (algorithmic)</h2>
+    <ol>
+      <li>Write an <strong style="color:var(--fg)">entry rule</strong> a machine could run. Baseline: Monday open or close, combo, Friday weekly, strike you specify (ATM, nearest OTM, delta, whatever — say it).</li>
+      <li>Write an <strong style="color:var(--fg)">exit rule</strong>. Expire, buy-to-close, get assigned, or roll — your choice, but it has to be a rule, not a vibe.</li>
+      <li>A roll rule is optional. If you implement one, specify when, to which expiry/strike, and at what limit.</li>
+    </ol>
+
+    <h2>Blotter (non-negotiable)</h2>
+    <p>Submit a <strong style="color:var(--fg)">clean blotter of trades you actually booked</strong>: entries and exits. Time, instrument (stock or option RIC / occ label), side (BUY / SELL / BTC / EXPIRE / ASSIGN), qty, limit/fill price, cash delta, notes that point at the rule that fired. Working orders do not belong here. A signal chart is not a blotter.</p>
+    <p>The <strong style="color:var(--fg)">ledger</strong> is the running position: shares, short calls (strike + expiry), cash, marks.</p>
+
+    <h2>Reg T — what you must track</h2>
+    <p>Use a <strong style="color:var(--fg)">Reg T</strong> account, not portfolio margin. Reg T is computable without a broker’s PM/SPAN engine, it is not broker-dependent, and a book that survives Reg T survives PM — not the other way around.</p>
+    <p>For a <em>covered</em> call (long 100 shares, short 1 call on those shares):</p>
+    <ul>
+      <li><strong style="color:var(--fg)">NAV (equity)</strong> = cash + stock market value + option market value. A short call is a negative MV.</li>
+      <li><strong style="color:var(--fg)">Long market value (LMV)</strong> = shares × stock mark.</li>
+      <li><strong style="color:var(--fg)">Initial margin</strong> = 50% of stock LMV. The covered short call adds <strong style="color:var(--fg)">$0</strong> initial. (A naked short call would; you are not naked.)</li>
+      <li><strong style="color:var(--fg)">Maintenance margin</strong> = 25% of stock LMV (FINRA). Again, the covered call does not add a naked-option maintenance pad.</li>
+      <li><strong style="color:var(--fg)">Available funds</strong> = NAV − initial. Room to put on a new risk.</li>
+      <li><strong style="color:var(--fg)">Excess equity</strong> = NAV − maintenance. The margin-call line.</li>
+      <li><strong style="color:var(--fg)">Cash</strong> moves only when the blotter says so (buy stock, collect premium, pay BTC, expire at 0, assignment).</li>
+    </ul>
+    <p>Plot NAV (and initial / maintenance) over time with mouseover values. If available funds go negative, you could not have put the trade on — say so.</p>
+
+    <h2>Option RICs (how to ask LSEG for an expired contract)</h2>
+    <p>US listed equity options on OPRA use this Reuters Instrument Code. The Helios Python (<span class="mono">helios/python/option_rics.py</span>) builds it like this:</p>
+    <pre>{ROOT}{MONTH}{DAY}{YY}{STRIKE}{ .U }{ ^MONTHYY if expired }</pre>
+    <ul>
+      <li><span class="mono">ROOT</span> — equity RIC before the dot, upper case. <span class="mono">AAPL.O</span> → <span class="mono">AAPL</span>. <span class="mono">UUUU.N</span> → <span class="mono">UUUU</span>.</li>
+      <li><span class="mono">MONTH</span> — a single letter for the expiry month <em>and</em> put/call:</li>
+    </ul>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th></th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Call</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td><td>I</td><td>J</td><td>K</td><td>L</td></tr>
+          <tr><td>Put</td><td>M</td><td>N</td><td>O</td><td>P</td><td>Q</td><td>R</td><td>S</td><td>T</td><td>U</td><td>V</td><td>W</td><td>X</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li><span class="mono">DAY</span> — expiry day, <strong style="color:var(--fg)">not zero-padded</strong> (5 not 05). Matches the Python: <span class="mono">expiry.day</span>.</li>
+      <li><span class="mono">YY</span> — two-digit year of the expiry.</li>
+      <li><span class="mono">STRIKE</span> — strike × 100, <strong style="color:var(--fg)">5 digits</strong>, zero-padded. 14.50 → <span class="mono">01450</span>. 190 → <span class="mono">19000</span>. 192.50 → <span class="mono">19250</span>.</li>
+      <li><span class="mono">.U</span> — OPRA / US listed.</li>
+      <li><strong style="color:var(--fg)">Expired only:</strong> append <span class="mono">^{MONTH}{YY}</span> using the same month letter. Live contracts do not get the caret suffix.</li>
+    </ul>
+    <p>Class example (expired call): 14.5-strike, 21 Aug 2026, UUUU:</p>
+    <pre>UUUUH212601450.U^H26
+ld.get_history(universe="UUUUH212601450.U^H26",
+               fields=["TRDPRC_1", "BID", "ASK"],
+               interval="hourly", start=..., end=...)</pre>
+    <p>AAPL worked-example RICs (expired as of this assignment):</p>
+    <pre>AAPLF52619000.U^F26     # AAPL 5 Jun 2026 190 call
+AAPLG172620000.U^G26    # AAPL 17 Jul 2026 200 call
+AAPLH72620500.U^H26     # AAPL 7 Aug 2026 205 call</pre>
+    <p>A put uses the put letter. Same strike/day/year/.U/suffix. Guess-and-check must fail soft (empty series, not a crash). Weeklys: take the last session in each week from the stock tape so you do not invent holiday expiries, then walk Friday from there.</p>
+
+    <h2>Pages vs local Data</h2>
     <div class="scroll">
       <table>
         <thead><tr><th>Surface</th><th>Role</th><th>Graded?</th></tr></thead>
         <tbody>
-          <tr><td>GitHub Pages</td><td>Blotter, ledger, NAV/margin, write-up — HTML/CSS/JS + baked data</td><td class="accent">Yes. The assignment.</td></tr>
-          <tr><td>Local Data</td><td>How you pull tape from LSEG Workspace</td><td>No. A tool.</td></tr>
+          <tr><td>GitHub Pages</td><td>Blotter, ledger, NAV/margin, mid-vs-trade, write-up</td><td class="accent">Yes. The assignment.</td></tr>
+          <tr><td>Local Data</td><td>How you pull tape (Workspace)</td><td>No. A tool.</td></tr>
         </tbody>
       </table>
     </div>
-    <p>Pages cannot run Workspace. If you ship a Data page, on github.io it must show <strong style="color:var(--fg)">Data connection required</strong> and tell the reader to run it locally. Live LSEG on Pages is a defect.</p>
+    <p>Pages cannot run Workspace. A Data page on github.io must show <strong style="color:var(--fg)">Data connection required</strong>. Live LSEG on Pages is a defect.</p>
+    <pre>python3 helios/python/local_server.py
+# http://127.0.0.1:8765/helios/data.html</pre>
+    <p>Bake JSON into <span class="mono">book.js</span> (or equivalent) and push static files. HTML / CSS / JS. Node is not required. You may use AI; the book and the reasoning are yours.</p>
 
-    <h2>Strategy you implement</h2>
-    <ol>
-      <li>One U.S. equity (Helios sample is <span class="mono">UUUU</span> — pick your own if you want).</li>
-      <li>Buy <strong style="color:var(--fg)">100 shares</strong>.</li>
-      <li>Sell <strong style="color:var(--fg)">1 call</strong>, target <strong style="color:var(--fg)">~5 DTE</strong> (weeklies).</li>
-      <li>Each week: expire, get assigned, or roll — <em>your</em> rules, written on the site.</li>
-      <li>About 10 weeks of history. Strikes from a bit below the window low to a bit above the high.</li>
-    </ol>
-    <p>The blotter is trades you actually booked, not a signal chart.</p>
-
-    <h2>What the Pages site must contain</h2>
+    <h2>What the published site must contain</h2>
     <ul>
-      <li><strong style="color:var(--fg)">Blotter</strong> — time, instrument, side, qty, price, notes.</li>
-      <li><strong style="color:var(--fg)">Ledger</strong> — stock, short calls, cash over time.</li>
-      <li><strong style="color:var(--fg)">Reg T accounts</strong> — NAV, cash, initial (50% of stock LMV; the covered short call adds $0), maintenance (25% of LMV), available funds (NAV − initial), excess (NAV − maintenance).</li>
-      <li><strong style="color:var(--fg)">NAV / margin path</strong> with mouseover values.</li>
-      <li><strong style="color:var(--fg)">Write-up</strong> — fill rule, roll rule, pin/assignment, and why we use Reg T instead of portfolio margin (computable without a broker PM engine; not broker-dependent; a book that lives in Reg T lives in PM, not the other way around).</li>
-      <li>Optional but useful: mid = (bid+ask)/2 vs trade, with R².</li>
+      <li>Blotter — every entry and exit.</li>
+      <li>Ledger — stock, short calls, cash over time.</li>
+      <li>Reg T accounts listed above, used correctly.</li>
+      <li>NAV path (and margin) with mouseover.</li>
+      <li>Mid vs trade scatter for near-the-money calls, with R².</li>
+      <li>Write-up: entry, exit/roll/pin, fill (mid vs curve), why Reg T.</li>
     </ul>
 
-    <h2>How you get the data (ungraded)</h2>
-    <p>Workspace open and signed in, from a clone of this repo:</p>
-    <pre>python3 helios/python/local_server.py
-# then http://127.0.0.1:8765/helios/data.html</pre>
-    <p>Search, fetch hourly (or daily) bars, download JSON, bake what you used into <span class="mono">book.js</span> (or your equivalent), push <span class="mono">gh-pages/</span>. Prefer hourly over 1-minute for a 10-week window. One RIC at a time. Expired U.S. equity calls look like <span class="mono">UUUUH212601450.U^H26</span>.</p>
-
-    <h2>Stack</h2>
-    <p>HTML, CSS, and JavaScript on GitHub Pages. Node / Vite / Reflex are not required. You may use AI; the published book and the reasoning are yours.</p>
-
-    <h2>Rubric</h2>
+    <h2>Rubric (100% the published site)</h2>
     <div class="scroll">
       <table class="rubric">
         <thead><tr><th>Criterion</th><th>Pts</th></tr></thead>
         <tbody>
-          <tr><td>Thoughtful rules (5 DTE, fill, roll, pin) written clearly</td><td>25</td></tr>
-          <tr><td>Blotter + ledger that actually implement those rules</td><td>25</td></tr>
-          <tr><td>Reg T NAV / IM / MM / available funds, used correctly</td><td>20</td></tr>
-          <tr><td>Charts / presentation that make the book readable</td><td>15</td></tr>
-          <tr><td>Analysis: what happened, what you’d change, where theory met tape</td><td>15</td></tr>
+          <tr><td>Algorithmic entry + exit (roll optional but must be a rule if present)</td><td>20</td></tr>
+          <tr><td>Clean blotter + ledger that implement those rules; simulated limit fills</td><td>25</td></tr>
+          <tr><td>Reg T NAV / IM / MM / available funds / cash, used like an account</td><td>20</td></tr>
+          <tr><td>Mid vs TRDPRC_1 scatter + R² (justify the fill assumption)</td><td>15</td></tr>
+          <tr><td>Analysis: what happened, where theory met tape, what you’d change</td><td>20</td></tr>
         </tbody>
       </table>
     </div>
-
-    <h2>Start from the example</h2>
-    <p>Copy <span class="mono">gh-pages/helios/</span>, replace <span class="mono">book.js</span>, keep <span class="mono">data.html</span> as the local-only lab. This assignment page lives next to the sample blotter so students can see the bar.</p>
   </main>
 </body>
 </html>
