@@ -78,8 +78,8 @@
       <div class="pane-head"><div><p class="kicker">Rules</p><h2>${w.title || "Covered-call rules"}</h2></div></div>
       <div class="writeup">
         <div><h3>Fill</h3><p>${w.fill || ""}</p></div>
-        <div><h3>Roll</h3><p>${w.roll || ""}</p></div>
-        <div><h3>Pin / assignment</h3><p>${w.pin || ""}</p></div>
+        <div><h3>Exit</h3><p>${w.roll || ""}</p></div>
+        <div><h3>Assignment</h3><p>${w.pin || ""}</p></div>
         <div><h3>Reg T</h3><p>${w.regT || ""}</p></div>
       </div>`;
   }

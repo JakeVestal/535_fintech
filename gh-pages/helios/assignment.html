@@ -36,7 +36,7 @@
   <div class="card">
     <div class="lbl">Turn in</div>
     <p class="hint" style="font-size:0.95rem;color:var(--fg);line-height:1.45">
-      Your GitHub Pages URL. Here is a non-enablig example:
+      Your GitHub Pages URL. Here is a non-enabling example:
       <a href="./">jakevestal.github.io/535_fintech/</a>
     </p>
   </div>
@@ -88,7 +88,7 @@
     down these decisions on your website; that is your algorithm, and <b>that is
     the true point of this assignment</b> — to identify and communicate those
     decisions that determine the entry and exit rules of your strategy. You
-    may be suprised how different your HWs will be even though you are
+    may be surprised how different your HWs will be even though you are
     implementing the same strategy. That's because success is all in the
     execution and the smart design of the small decisions and rules.
   </p>
@@ -178,7 +178,7 @@
     Submit a <strong style="color:var(--fg)">clean blotter of trades you
     actually booked</strong>:
     entries and exits. Time, instrument (stock or option RIC / OCC label), side
-    (BUY / SELL / BTC / EXPIRE / ASSIGN), qty, limit/fill price, cash delta,
+    (BUY / SELL / EXPIRE / ASSIGN), qty, limit/fill price, cash delta,
     notes that point at the rule that fired. Working orders do not belong here.
     <b>A signal chart is not a blotter.</b> A blotter is a list of trades.
   </p>
@@ -202,7 +202,7 @@
     <li><strong style="color:var(--fg)">Maintenance margin</strong> = 25% of stock LMV (FINRA). Again, the covered call does not add a naked-option maintenance pad.</li>
     <li><strong style="color:var(--fg)">Available funds</strong> = NAV − initial. Room to put on a new risk.</li>
     <li><strong style="color:var(--fg)">Excess equity</strong> = NAV − maintenance. The margin-call line.</li>
-    <li><strong style="color:var(--fg)">Cash</strong> moves only when the blotter says so (buy stock, collect premium, pay BTC, expire at 0, assignment).</li>
+    <li><strong style="color:var(--fg)">Cash</strong> moves only when the blotter says so (buy stock, collect premium, expire at 0, assignment at strike).</li>
   </ul>
   <p>Plot NAV (and initial / maintenance) over time with mouseover values. If available funds go negative, you could not have put the trade on — say so.</p>
 
@@ -264,7 +264,7 @@ AAPLH72620500.U^H26     # AAPL 7 Aug 2026 205 call</pre>
     <li>Reg T accounts listed above, used correctly.</li>
     <li>NAV path (and margin) with mouseover.</li>
     <li>Mid vs trade scatter for near-the-money calls, with R².</li>
-    <li>Write-up: entry, exit/roll/pin, fill (mid vs curve), why Reg T.</li>
+    <li>Write-up: how you chose the strike, wait-through-expiry (OTM expire / ITM assigned → flat), fill at mid, why Reg T.</li>
   </ul>
 
   <h2>Rubric (100% the published site)</h2>
@@ -272,7 +272,7 @@ AAPLH72620500.U^H26     # AAPL 7 Aug 2026 205 call</pre>
     <table class="rubric">
       <thead><tr><th>Criterion</th><th>Pts</th></tr></thead>
       <tbody>
-      <tr><td>Algorithmic entry + exit (roll optional but must be a rule if present)</td><td>20</td></tr>
+      <tr><td>Algorithmic entry + strike rule; wait through expiry</td><td>20</td></tr>
       <tr><td>Clean blotter + ledger that implement those rules; simulated limit fills</td><td>25</td></tr>
       <tr><td>Reg T NAV / IM / MM / available funds / cash, used like an account</td><td>20</td></tr>
       <tr><td>Mid vs TRDPRC_1 scatter + R² (justify the fill assumption)</td><td>15</td></tr>
