@@ -7,20 +7,24 @@
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <main>
+  <div class="topbar">
+    <span class="brand">Helios Tape</span>
     <nav>
-      <a href="../">Option surface lab</a>
-      <a href="./">Helios blotter</a>
-      <a href="data.html">Data (local)</a>
+      <a href="../">Surface lab</a>
+      <a class="on" href="./">Blotter</a>
+      <a href="data.html">Data</a>
+      <a href="assignment.html">Assignment</a>
     </nav>
-    <header>
+  </div>
+  <main>
+    <header class="hero">
       <div>
         <p class="kicker">Sample book · static GitHub Pages</p>
         <h1>Covered-call blotter</h1>
         <p class="lede">
-          Trades you actually booked, the running ledger, and Reg T accounts.
-          This page is HTML/JS/CSS plus <span class="mono">book.js</span>.
-          There is no LSEG session here — pull data locally, bake the book, push this folder.
+          Every fill you actually booked, the running ledger, and the Reg T accounts
+          that decide whether you can write the next ~5 DTE call. This page is HTML, CSS, JS
+          and <span class="mono">book.js</span> — no LSEG session. Replace the sample rows with your tape.
         </p>
       </div>
       <div class="badge" id="badge">SAMPLE</div>
@@ -32,20 +36,16 @@
       <div class="pane-head">
         <div>
           <p class="kicker">NAV</p>
-          <h2>Equity and available funds</h2>
+          <h2>Growth of the sample book</h2>
         </div>
+        <p class="meta" id="chart-meta">NAV · initial · maintenance · hover a date</p>
       </div>
-      <div class="chart" id="nav-chart"></div>
-    </section>
-
-    <section class="pane">
-      <div class="pane-head">
-        <div>
-          <p class="kicker">Margin</p>
-          <h2>Initial, maintenance, cash</h2>
-        </div>
+      <div class="legend">
+        <span><i style="border-color:#2ee6d0"></i>NAV</span>
+        <span><i class="dash" style="border-color:#5e7673"></i>Initial</span>
+        <span><i class="dash" style="border-color:#ff6b8a"></i>Maintenance</span>
       </div>
-      <div class="chart" id="mgn-chart"></div>
+      <div class="chart-wrap" id="book-chart"></div>
     </section>
 
     <section class="pane">
@@ -54,7 +54,7 @@
           <p class="kicker">Blotter</p>
           <h2>Trades you actually made</h2>
         </div>
-        <p class="lede">Buy 100 shares, write one call. Rolls are BTC + a new sell. Working orders do not belong here.</p>
+        <p class="lede" style="margin:0;max-width:22rem">Buy 100 shares, write one call. Rolls are BTC + a new sell. Working orders do not belong here.</p>
       </div>
       <div class="scroll">
         <table>
@@ -74,6 +74,7 @@
           <p class="kicker">Ledger</p>
           <h2>Position, cash, and margin over time</h2>
         </div>
+        <p class="lede" style="margin:0;max-width:24rem">Marks at week-ends. Short calls are negative MV. Covered-call initial is 50% of stock LMV.</p>
       </div>
       <div class="scroll">
         <table>

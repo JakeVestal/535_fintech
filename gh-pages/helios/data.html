@@ -7,6 +7,15 @@
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
+  <div class="topbar">
+    <span class="brand">Helios Tape</span>
+    <nav>
+      <a href="./">Blotter</a>
+      <a class="on" href="data.html">Data</a>
+      <a href="assignment.html">Assignment</a>
+    </nav>
+  </div>
+
   <div id="gate" class="gate" hidden>
     <div class="gate-card">
       <p class="kicker">Data connection required</p>
@@ -22,11 +31,7 @@
   </div>
 
   <main id="lab">
-    <nav>
-      <a href="./">Blotter</a>
-      <a href="data.html">Data</a>
-    </nav>
-    <header>
+    <header class="hero">
       <div>
         <p class="kicker">Local lab · not graded</p>
         <h1>Pull tape</h1>
@@ -39,6 +44,7 @@
     </header>
 
     <section class="pane">
+      <div class="pane-pad">
       <div class="row">
         <label>Search<input id="q" placeholder="UUUU" /></label>
         <button type="button" id="search">Search</button>
@@ -57,10 +63,11 @@
         <button type="button" id="dl" disabled>Download JSON</button>
       </div>
       <p class="lede" id="status">Workspace + local_server.py required.</p>
+      </div>
     </section>
 
     <section class="pane">
-      <div class="chart tall" id="candles"></div>
+      <div class="chart-wrap tall" id="candles"></div>
     </section>
   </main>
   <script src="data.js"></script>

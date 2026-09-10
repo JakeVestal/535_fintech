@@ -121,7 +121,7 @@
           <rect x="${x(i) - w / 2}" y="${bodyTop}" width="${w}" height="${bh}" fill="${color}"/>`;
       })
       .join("");
-    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${sticks}
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${sticks}
       <text x="8" y="14" fill="#5e7673" font-size="10" font-family="ui-monospace,monospace">${hi.toFixed(2)}</text>
       <text x="8" y="${H - 18}" fill="#5e7673" font-size="10" font-family="ui-monospace,monospace">${lo.toFixed(2)}</text>
     </svg>`;

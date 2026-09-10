@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>FINTECH 535 — Covered Call Backtest</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div class="topbar">
+    <span class="brand">Helios Tape</span>
+    <nav>
+      <a href="./">Blotter</a>
+      <a href="data.html">Data</a>
+      <a class="on" href="assignment.html">Assignment</a>
+    </nav>
+  </div>
+  <main class="prose">
+    <header class="hero">
+      <div>
+        <p class="kicker">FINTECH 535 · homework</p>
+        <h1>Covered call backtest</h1>
+        <p class="lede">
+          Publish a static GitHub Pages site that is your book: blotter, ledger, Reg T accounts, charts, and a write-up of the rules you actually ran.
+          The site is <strong style="color:var(--fg)">100% of the grade</strong>. I will not grade a data fetcher.
+        </p>
+      </div>
+      <div class="badge">Due: as posted in Canvas</div>
+    </header>
+
+    <div class="card">
+      <div class="lbl">Turn in</div>
+      <p class="hint" style="font-size:0.95rem;color:var(--fg);line-height:1.5">
+        Your GitHub Pages URL. Example of the expected shape:
+        <a href="./">jakevestal.github.io/535_fintech/helios/</a>
+      </p>
+    </div>
+
+    <h2>What I am grading</h2>
+    <p>Analysis, thoughtfulness, and how you implemented the theory. Did you write a ~5 DTE covered call with explicit fill, roll, and pin rules? Does the blotter match those rules? Are Reg T numbers used like an account, not a decoration?</p>
+
+    <h2>Two surfaces</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Surface</th><th>Role</th><th>Graded?</th></tr></thead>
+        <tbody>
+          <tr><td>GitHub Pages</td><td>Blotter, ledger, NAV/margin, write-up — HTML/CSS/JS + baked data</td><td class="accent">Yes. The assignment.</td></tr>
+          <tr><td>Local Data</td><td>How you pull tape from LSEG Workspace</td><td>No. A tool.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Pages cannot run Workspace. If you ship a Data page, on github.io it must show <strong style="color:var(--fg)">Data connection required</strong> and tell the reader to run it locally. Live LSEG on Pages is a defect.</p>
+
+    <h2>Strategy you implement</h2>
+    <ol>
+      <li>One U.S. equity (Helios sample is <span class="mono">UUUU</span> — pick your own if you want).</li>
+      <li>Buy <strong style="color:var(--fg)">100 shares</strong>.</li>
+      <li>Sell <strong style="color:var(--fg)">1 call</strong>, target <strong style="color:var(--fg)">~5 DTE</strong> (weeklies).</li>
+      <li>Each week: expire, get assigned, or roll — <em>your</em> rules, written on the site.</li>
+      <li>About 10 weeks of history. Strikes from a bit below the window low to a bit above the high.</li>
+    </ol>
+    <p>The blotter is trades you actually booked, not a signal chart.</p>
+
+    <h2>What the Pages site must contain</h2>
+    <ul>
+      <li><strong style="color:var(--fg)">Blotter</strong> — time, instrument, side, qty, price, notes.</li>
+      <li><strong style="color:var(--fg)">Ledger</strong> — stock, short calls, cash over time.</li>
+      <li><strong style="color:var(--fg)">Reg T accounts</strong> — NAV, cash, initial (50% of stock LMV; the covered short call adds $0), maintenance (25% of LMV), available funds (NAV − initial), excess (NAV − maintenance).</li>
+      <li><strong style="color:var(--fg)">NAV / margin path</strong> with mouseover values.</li>
+      <li><strong style="color:var(--fg)">Write-up</strong> — fill rule, roll rule, pin/assignment, and why we use Reg T instead of portfolio margin (computable without a broker PM engine; not broker-dependent; a book that lives in Reg T lives in PM, not the other way around).</li>
+      <li>Optional but useful: mid = (bid+ask)/2 vs trade, with R².</li>
+    </ul>
+
+    <h2>How you get the data (ungraded)</h2>
+    <p>Workspace open and signed in, from a clone of this repo:</p>
+    <pre>python3 helios/python/local_server.py
+# then http://127.0.0.1:8765/helios/data.html</pre>
+    <p>Search, fetch hourly (or daily) bars, download JSON, bake what you used into <span class="mono">book.js</span> (or your equivalent), push <span class="mono">gh-pages/</span>. Prefer hourly over 1-minute for a 10-week window. One RIC at a time. Expired U.S. equity calls look like <span class="mono">UUUUH212601450.U^H26</span>.</p>
+
+    <h2>Stack</h2>
+    <p>HTML, CSS, and JavaScript on GitHub Pages. Node / Vite / Reflex are not required. You may use AI; the published book and the reasoning are yours.</p>
+
+    <h2>Rubric</h2>
+    <div class="scroll">
+      <table class="rubric">
+        <thead><tr><th>Criterion</th><th>Pts</th></tr></thead>
+        <tbody>
+          <tr><td>Thoughtful rules (5 DTE, fill, roll, pin) written clearly</td><td>25</td></tr>
+          <tr><td>Blotter + ledger that actually implement those rules</td><td>25</td></tr>
+          <tr><td>Reg T NAV / IM / MM / available funds, used correctly</td><td>20</td></tr>
+          <tr><td>Charts / presentation that make the book readable</td><td>15</td></tr>
+          <tr><td>Analysis: what happened, what you’d change, where theory met tape</td><td>15</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Start from the example</h2>
+    <p>Copy <span class="mono">gh-pages/helios/</span>, replace <span class="mono">book.js</span>, keep <span class="mono">data.html</span> as the local-only lab. This assignment page lives next to the sample blotter so students can see the bar.</p>
+  </main>
+</body>
+</html>
