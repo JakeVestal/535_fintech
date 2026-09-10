@@ -1,0 +1,10 @@
+node_modules
+dist
+.output
+.tanstack
+.vercel
+data/options-cache
+__pycache__
+*.pyc
+.DS_Store
+*.log
