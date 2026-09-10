@@ -7,58 +7,128 @@
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <div class="topbar">
-    <span class="brand">Helios Tape</span>
-    <nav>
-      <a href="./">Blotter</a>
-      <a href="data.html">Data</a>
-      <a class="on" href="assignment.html">Assignment</a>
-    </nav>
-  </div>
-  <main class="prose">
-    <header class="hero">
-      <div>
-        <p class="kicker">FINTECH 535 · homework</p>
-        <h1>Covered call backtest</h1>
-        <p class="lede">
-          Implement a covered-call strategy, simulate execution, and publish the book.
-          The GitHub Pages site is <strong style="color:var(--fg)">100% of the grade</strong>.
-          I grade the rules, the blotter, the Reg T accounts, and the thinking — not a data fetcher.
-        </p>
-      </div>
-      <div class="badge">Due: as posted in Canvas</div>
-    </header>
-
-    <div class="card">
-      <div class="lbl">Turn in</div>
-      <p class="hint" style="font-size:0.95rem;color:var(--fg);line-height:1.5">
-        Your GitHub Pages URL. Worked example (AAPL weeklies, liquid, easy to pull):
-        <a href="./">jakevestal.github.io/535_fintech/</a>
+<div class="topbar">
+  <span class="brand">Helios Tape</span>
+  <nav>
+    <a href="./">Blotter</a>
+    <a href="data.html">Data</a>
+    <a class="on" href="assignment.html">Assignment</a>
+  </nav>
+</div>
+<main class="prose">
+  <header class="hero">
+    <div>
+      <p class="kicker">FINTECH 535 · homework</p>
+      <h1>Covered call backtest</h1>
+      <p class="lede">
+        Implement a covered-call strategy, simulate execution, and publish the book.
+        This is our first backtest assignment so you'll be graded on
+        logical consistency (no crazy/impossible trades; reasonable fill
+        prices, your strategy does what you say it does), clarity of
+        presentation, and fulfillment of the requirements. You do not have
+        to be incredibly fancy yet; it is perfectly fine just to backtest
+        and analize the behavior of a basic covered call strategy this week.
       </p>
     </div>
+    <div class="badge">Due: as posted in Canvas</div>
+  </header>
 
-    <h2>What you are building</h2>
-    <p>A <strong style="color:var(--fg)">covered call</strong>: long 100 shares, short 1 call. Backtest it on one name of your choosing. Simulate fills. Track the book like a Reg T account. Publish a <strong style="color:var(--fg)">clean blotter</strong> of every entry and exit.</p>
-    <p>You must have <strong style="color:var(--fg)">clear, algorithmic rules</strong> for entering a trade and for exiting a trade (roll, buy-to-close, or let it expire). Complexity is optional. A baseline is acceptable:</p>
-    <p><strong style="color:var(--fg)">Baseline (perfectly fine):</strong> Monday open <em>or</em> Monday close, buy the covered call as a <em>combo / basket</em> (100 shares + short 1 call) with Friday expiry (~5 DTE). Limit orders. Fill the call at the bid/ask midpoint. Hold to Friday. If you add a roll rule, write it down and run it.</p>
+  <div class="card">
+    <div class="lbl">Turn in</div>
+    <p class="hint" style="font-size:0.95rem;color:var(--fg);line-height:1.5">
+      Your GitHub Pages URL. Here is an example, that I and the TA will be
+      evolving alongside you:
+      <a href="./">jakevestal.github.io/535_fintech/</a>
+    </p>
+  </div>
 
-    <h2>Pick your underlying</h2>
-    <p>Any U.S. equity (or ETF) you can pull from LSEG. Prefer a name with <strong style="color:var(--fg)">liquid weeklies</strong> so mids are tight and TRDPRC_1 actually prints — AAPL, MSFT, NVDA, SPY, QQQ, etc. Thin names make the midpoint assumption harder to defend. The worked example uses <span class="mono">AAPL</span>.</p>
+  <h2>What you are building</h2>
+  <p>
+    A <strong style="color:var(--fg)">covered call backtest</strong>: long
+    100 shares, short 1 call. Backtest it on one stock of your choosing. I
+    adivse you to pick an underlying that has liquid, easy-to-price
+    options to make this easier. Simulate fills by pulling historical price
+    data and using it to generate a blotter of what would have happened if
+    your entry conditions were met. See the example page for guidance. You
+    must have <strong style="color:var(--fg)">clear, algorithmic rules</strong> for
+    entering a trade and for exiting a trade (roll, buy-to-close, or let it
+    expire). A perfectly fine and acceptable set of rules that will get
+    full credit for this assignment is would be to write a loop that
+    scrolls through the historical data and records:
+  </p>
+  <ol>
+    <li>
+      Buy 100 shares at the stock price (reduce cash by the amount) on Monday
+    </li>
+    <li>
+      Write 1 call, expiring that Friday at an OTM strike and increase your
+      cash amount by the premium.
+    </li>
+    <li>
+      Wait for expiry. If ITM at expiry? Then do the same thing for the next
+      week. If not? Then write another call next Monday.
+    </li>
+  </ol>
+  <p>
+    If you go more complex than this, I won't hold you back, but I suggest
+    you at least start from this simple case (so that you're covered for your
+    HW grade) before adding complexity on top of it.
+  </p>
+  <p>
+    As you do this, you will need to make all sorts of small but important
+    design and financial engineering decisions. HOW will you choose
+    the strike price at which you write the call? Why did you choose the
+    stock that you did? Is it better to hold until expiry, or to immediately
+    set a limit order to buy back the call at X% profit (and simulate a "fill"
+    of that happening by writing down the cash payment to buy back)? Write
+    down these decisions on your websites; that is your algorithm and that is
+    the true point of this assignment -- to identify and communicate those
+    decisions that determine the entry and exit rules of your strategy.
+  </p>
 
-    <h2>Fills and limit orders</h2>
-    <p>Work <strong style="color:var(--fg)">limit orders</strong> — they are easier to model than market orders.</p>
-    <ul>
-      <li><strong style="color:var(--fg)">Default, this assignment:</strong> you get filled at the option <strong style="color:var(--fg)">mid = (BID + ASK) / 2</strong> at the timestamp of the order. Combined with intraday stock prints, that lets you price the covered-call combo any time of day.</li>
-      <li><strong style="color:var(--fg)">Optional upgrade:</strong> fit a volatility curve to multiple prints, infer a fair price, and assume that fill. If you do this, show the fit.</li>
-    </ul>
-    <p>If there is no bid/ask at that bar, you do not fill. Skip. Do not invent a print.</p>
+  <h2>Pick your underlying</h2>
+  <p>Any U.S. equity (or ETF) you can pull from LSEG. Prefer a name with
+    <strong style="color:var(--fg)">liquid weeklies</strong> so mids are tight and
+    TRDPRC_1 actually prints — AAPL, MSFT, NVDA, SPY, QQQ, etc. Thin names
+    make the midpoint assumption harder to defend (but it's still suprisingly
+    robust for many smaller equities).
 
-    <h2>What LSEG actually gives you (expired options)</h2>
-    <p>Intraday history on expired listed options is available, but the field set is limited. You should expect:</p>
-    <ul>
-      <li><span class="mono">BID</span> and <span class="mono">ASK</span> — treat these as always-on for this assignment.</li>
-      <li>When they exist: <span class="mono">TRDPRC_1</span>, <span class="mono">OPEN_PRC</span>, <span class="mono">HIGH_1</span>, <span class="mono">LOW_1</span>, <span class="mono">ACVOL_UNS</span>, <span class="mono">NUM_MOVES</span>.</li>
-    </ul>
+  <h2>Making your Blotter</h2>
+
+  <ul>
+    <li><strong style="color:var(--fg)">Default, this assignment:</strong> you get filled
+      at the option <strong style="color:var(--fg)">mid = (BID + ASK) / 2</strong> at the
+      timestamp of the order. Combined with intraday stock prints, that lets
+      you price the covered-call combo any time of day.</li>
+    <li>
+      <strong style="color:var(--fg)">Optional upgrade:</strong> fit a volatility curve
+      to multiple prints, infer a fair price, and assume that fill. If you do
+      this, show the fit.
+    </li>
+  </ul>
+  <p>
+    If there is no bid/ask at that bar, you do not fill. Skip.
+    Do not invent a print. This is the worst mistake an algo trader can make
+    and it will cost you money in the long (or short) run.
+  </p>
+
+  <h2>What LSEG actually gives you (expired options)</h2>
+  <p>
+    Intraday history on expired listed options is available, but the field set
+    is limited. You should expect:
+  </p>
+  <ul>
+    <li>
+      <span class="mono">BID</span> and <span class="mono">ASK</span> — you
+      have these down to the 1-minute bar size even for expired options
+    </li>
+    <li>
+      when a trade happens, <span class="mono">TRDPRC_1</span>, <span
+            class="mono">OPEN_PRC</span>, <span class="mono">HIGH_1</span>,
+      <span class="mono">LOW_1</span>,
+      <span class="mono">ACVOL_UNS</span>,
+      <span class="mono">NUM_MOVES</span>.
+    </li>
     <p>That is enough. Mid from BID/ASK is the fill. Stock OHLC/intraday is the other half of the combo. Pull the same bar size for stock and options (hourly is the right default for a ~10-week window).</p>
     <p>Fetch <strong style="color:var(--fg)">near-the-money calls along the chain</strong> (same idea as the first homework: strikes from a bit below the stock’s low in the window to a bit above the high). Then graph <span class="mono">TRDPRC_1</span> on Y against <span class="mono">MID = (BID+ASK)/2</span> on X, fit a line, report <strong style="color:var(--fg)">R²</strong>. That is how you justify the midpoint assumption on <em>your</em> name.</p>
 
@@ -97,11 +167,11 @@
     <div class="scroll">
       <table>
         <thead>
-          <tr><th></th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th></tr>
+        <tr><th></th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th></tr>
         </thead>
         <tbody>
-          <tr><td>Call</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td><td>I</td><td>J</td><td>K</td><td>L</td></tr>
-          <tr><td>Put</td><td>M</td><td>N</td><td>O</td><td>P</td><td>Q</td><td>R</td><td>S</td><td>T</td><td>U</td><td>V</td><td>W</td><td>X</td></tr>
+        <tr><td>Call</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td><td>I</td><td>J</td><td>K</td><td>L</td></tr>
+        <tr><td>Put</td><td>M</td><td>N</td><td>O</td><td>P</td><td>Q</td><td>R</td><td>S</td><td>T</td><td>U</td><td>V</td><td>W</td><td>X</td></tr>
         </tbody>
       </table>
     </div>
@@ -128,8 +198,8 @@ AAPLH72620500.U^H26     # AAPL 7 Aug 2026 205 call</pre>
       <table>
         <thead><tr><th>Surface</th><th>Role</th><th>Graded?</th></tr></thead>
         <tbody>
-          <tr><td>GitHub Pages</td><td>Blotter, ledger, NAV/margin, mid-vs-trade, write-up</td><td class="accent">Yes. The assignment.</td></tr>
-          <tr><td>Local Data</td><td>How you pull tape (Workspace)</td><td>No. A tool.</td></tr>
+        <tr><td>GitHub Pages</td><td>Blotter, ledger, NAV/margin, mid-vs-trade, write-up</td><td class="accent">Yes. The assignment.</td></tr>
+        <tr><td>Local Data</td><td>How you pull tape (Workspace)</td><td>No. A tool.</td></tr>
         </tbody>
       </table>
     </div>
@@ -153,14 +223,14 @@ AAPLH72620500.U^H26     # AAPL 7 Aug 2026 205 call</pre>
       <table class="rubric">
         <thead><tr><th>Criterion</th><th>Pts</th></tr></thead>
         <tbody>
-          <tr><td>Algorithmic entry + exit (roll optional but must be a rule if present)</td><td>20</td></tr>
-          <tr><td>Clean blotter + ledger that implement those rules; simulated limit fills</td><td>25</td></tr>
-          <tr><td>Reg T NAV / IM / MM / available funds / cash, used like an account</td><td>20</td></tr>
-          <tr><td>Mid vs TRDPRC_1 scatter + R² (justify the fill assumption)</td><td>15</td></tr>
-          <tr><td>Analysis: what happened, where theory met tape, what you’d change</td><td>20</td></tr>
+        <tr><td>Algorithmic entry + exit (roll optional but must be a rule if present)</td><td>20</td></tr>
+        <tr><td>Clean blotter + ledger that implement those rules; simulated limit fills</td><td>25</td></tr>
+        <tr><td>Reg T NAV / IM / MM / available funds / cash, used like an account</td><td>20</td></tr>
+        <tr><td>Mid vs TRDPRC_1 scatter + R² (justify the fill assumption)</td><td>15</td></tr>
+        <tr><td>Analysis: what happened, where theory met tape, what you’d change</td><td>20</td></tr>
         </tbody>
       </table>
     </div>
-  </main>
+</main>
 </body>
 </html>
