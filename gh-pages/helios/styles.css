@@ -1,0 +1,31 @@
+nav a { font-family: var(--mono); font-size: 12px; margin-right: 1rem; }
+
+.gate {
+  position: fixed; inset: 0; z-index: 20;
+  background: rgba(7, 11, 16, 0.92);
+  display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+}
+.gate[hidden] { display: none; }
+.gate-card {
+  max-width: 36rem; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 1.5rem 1.6rem;
+}
+.gate-card h1 { font-size: 1.4rem; }
+.gate-card pre {
+  background: var(--surface-2); border: 1px solid var(--line); padding: 0.75rem 1rem;
+  font-family: var(--mono); font-size: 13px; overflow: auto; color: var(--accent);
+}
+.row { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: flex-end; }
+.row label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 11px; color: var(--faint); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
+.row input, .row select {
+  background: var(--surface-2); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 0.4rem 0.5rem; font-family: var(--mono); min-width: 8rem;
+}
+button {
+  background: var(--surface-2); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 0.45rem 0.8rem; font-family: var(--mono); font-size: 12px;
+}
+button.primary { border-color: var(--accent-dim); color: var(--accent); }
+button:disabled { opacity: 0.45; }
+.chart.tall { height: 22rem; }
+.badge.down { color: var(--down); border-color: var(--down); }
