@@ -36,16 +36,25 @@
 
   document.getElementById("blotter-body").innerHTML = B.blotter
     .map((t) => {
-      const dir = t.side === "BUY" || t.side === "BTC" ? -1 : 1;
-      const delta = dir * t.qty * t.price * t.multiplier;
-      const sc = t.side === "SELL" ? "accent" : t.side === "EXPIRE" ? "" : "down";
-      const dc = delta >= 0 ? "accent" : "down";
+      const px = t.fill != null ? t.fill : t.price;
+      let delta = 0;
+      if (t.side === "BUY") delta = -t.qty * px * t.multiplier;
+      else if (t.side === "SELL") delta = t.qty * px * t.multiplier;
+      const sc =
+        t.side === "SELL" || t.side === "ASSIGN" ? "accent" :
+        t.side === "EXPIRE" ? "" : "down";
+      const dc = delta > 0 ? "accent" : delta < 0 ? "down" : "";
+      const lim = t.limit == null ? "—" : Number(t.limit).toFixed(2);
+      const fill = t.fill == null ? "—" : Number(t.fill).toFixed(2);
+      const occ = t.occ && t.occ !== t.instrument
+        ? `<div style="color:var(--faint);font-size:10px">${t.occ}</div>` : "";
       return `<tr>
         <td class="mono" style="color:var(--muted);white-space:nowrap">${t.ts}</td>
+        <td class="mono">${t.instrument}${occ}</td>
         <td class="mono ${sc}">${t.side}</td>
         <td class="mono">${t.qty}</td>
-        <td class="mono">${t.instrument}</td>
-        <td class="mono">${Number(t.price).toFixed(2)}</td>
+        <td class="mono" style="color:var(--muted)">${lim}</td>
+        <td class="mono">${fill}</td>
         <td class="mono ${dc}">${money(delta)}</td>
         <td style="color:var(--muted)">${t.notes}</td>
       </tr>`;

@@ -48,6 +48,13 @@ a:hover { text-decoration: underline; }
   color: var(--muted); margin-right: 1.1rem; text-decoration: none;
 }
 .topbar nav a:hover, .topbar nav a.on { color: var(--accent); }
+.topbar .src {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
+  color: var(--ice); text-decoration: none;
+  border: 1px solid var(--line); padding: 0.28rem 0.6rem; border-radius: 6px;
+  margin-left: 0.25rem;
+}
+.topbar .src:hover { color: var(--accent); border-color: var(--accent-dim); text-decoration: none; }
 
 main { max-width: 74rem; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; display: flex; flex-direction: column; gap: 1.15rem; }
 

@@ -10,194 +10,224 @@ window.HELIOS_BOOK = {
       "side": "BUY",
       "qty": 100,
       "instrument": "AAPL",
+      "occ": "AAPL",
       "asset": "STK",
       "strike": null,
       "expiry": null,
-      "price": 188.4,
+      "limit": 188.4,
+      "fill": 188.4,
       "multiplier": 1,
-      "notes": "Combo stock leg. Limit at the open print. 100 shares. Decrease cash."
+      "notes": "Monday combo \u00b7 stock leg. Limit = open print. Decrease cash. Rule: if flat, buy 100."
     },
     {
       "id": "t2",
       "ts": "2026-06-01 09:30",
       "side": "SELL",
       "qty": 1,
-      "instrument": "AAPL 6/5 190.0 C",
+      "instrument": "AAPLF52619000.U^F26",
+      "occ": "AAPL 6/5 190.0 C",
       "asset": "CALL",
-      "strike": 190.0,
+      "strike": 190,
       "expiry": "2026-06-05",
-      "price": 1.82,
+      "limit": 1.82,
+      "fill": 1.82,
       "multiplier": 100,
-      "notes": "Friday weekly, nearest OTM. Limit = option mid. Increase cash by 100\u00d7mid."
+      "notes": "Monday combo \u00b7 call leg. Nearest OTM Friday weekly. Limit = mid. Increase cash 100\u00d7mid."
     },
     {
       "id": "t3",
       "ts": "2026-06-05 16:00",
       "side": "EXPIRE",
       "qty": 1,
-      "instrument": "AAPL 6/5 190.0 C",
+      "instrument": "AAPLF52619000.U^F26",
+      "occ": "AAPL 6/5 190.0 C",
       "asset": "CALL",
-      "strike": 190.0,
+      "strike": 190,
       "expiry": "2026-06-05",
-      "price": 0,
+      "limit": null,
+      "fill": 0,
       "multiplier": 100,
-      "notes": "OTM. Keep shares, keep premium. Next Monday write the next call."
+      "notes": "Friday OTM. Exit = wait. Keep shares, keep premium."
     },
     {
       "id": "t4",
       "ts": "2026-06-08 09:30",
       "side": "SELL",
       "qty": 1,
-      "instrument": "AAPL 6/12 192.5 C",
+      "instrument": "AAPLF122619250.U^F26",
+      "occ": "AAPL 6/12 192.5 C",
       "asset": "CALL",
       "strike": 192.5,
       "expiry": "2026-06-12",
-      "price": 1.64,
+      "limit": 1.64,
+      "fill": 1.64,
       "multiplier": 100,
-      "notes": "Still long stock. Write next Friday weekly. Limit at mid."
+      "notes": "Still long. Write next Friday weekly. Limit = mid."
     },
     {
       "id": "t5",
       "ts": "2026-06-12 16:00",
       "side": "EXPIRE",
       "qty": 1,
-      "instrument": "AAPL 6/12 192.5 C",
+      "instrument": "AAPLF122619250.U^F26",
+      "occ": "AAPL 6/12 192.5 C",
       "asset": "CALL",
       "strike": 192.5,
       "expiry": "2026-06-12",
-      "price": 0,
+      "limit": null,
+      "fill": 0,
       "multiplier": 100,
-      "notes": "OTM expire."
+      "notes": "Friday OTM expire."
     },
     {
       "id": "t6",
       "ts": "2026-06-15 09:30",
       "side": "SELL",
       "qty": 1,
-      "instrument": "AAPL 6/19 190.0 C",
+      "instrument": "AAPLF192619000.U^F26",
+      "occ": "AAPL 6/19 190.0 C",
       "asset": "CALL",
-      "strike": 190.0,
+      "strike": 190,
       "expiry": "2026-06-19",
-      "price": 1.91,
+      "limit": 1.91,
+      "fill": 1.91,
       "multiplier": 100,
-      "notes": "Spot dipped; ATM-ish 190s. Limit at mid."
+      "notes": "Spot dipped; ATM-ish 190s. Limit = mid."
     },
     {
       "id": "t7",
       "ts": "2026-06-19 16:00",
       "side": "EXPIRE",
       "qty": 1,
-      "instrument": "AAPL 6/19 190.0 C",
+      "instrument": "AAPLF192619000.U^F26",
+      "occ": "AAPL 6/19 190.0 C",
       "asset": "CALL",
-      "strike": 190.0,
+      "strike": 190,
       "expiry": "2026-06-19",
-      "price": 0,
+      "limit": null,
+      "fill": 0,
       "multiplier": 100,
-      "notes": "OTM expire."
+      "notes": "Friday OTM expire."
     },
     {
       "id": "t8",
       "ts": "2026-06-22 09:30",
       "side": "SELL",
       "qty": 1,
-      "instrument": "AAPL 6/26 195.0 C",
+      "instrument": "AAPLF262619500.U^F26",
+      "occ": "AAPL 6/26 195.0 C",
       "asset": "CALL",
-      "strike": 195.0,
+      "strike": 195,
       "expiry": "2026-06-26",
-      "price": 1.55,
+      "limit": 1.55,
+      "fill": 1.55,
       "multiplier": 100,
-      "notes": "Spot 192.4 \u2192 write 195s."
+      "notes": "Nearest OTM 195s. Limit = mid."
     },
     {
       "id": "t9",
       "ts": "2026-06-26 16:00",
       "side": "EXPIRE",
       "qty": 1,
-      "instrument": "AAPL 6/26 195.0 C",
+      "instrument": "AAPLF262619500.U^F26",
+      "occ": "AAPL 6/26 195.0 C",
       "asset": "CALL",
-      "strike": 195.0,
+      "strike": 195,
       "expiry": "2026-06-26",
-      "price": 0,
+      "limit": null,
+      "fill": 0,
       "multiplier": 100,
-      "notes": "OTM expire."
+      "notes": "Friday OTM expire."
     },
     {
       "id": "t10",
       "ts": "2026-06-29 09:30",
       "side": "SELL",
       "qty": 1,
-      "instrument": "AAPL 7/3 197.5 C",
+      "instrument": "AAPLG32619750.U^G26",
+      "occ": "AAPL 7/3 197.5 C",
       "asset": "CALL",
       "strike": 197.5,
       "expiry": "2026-07-03",
-      "price": 1.48,
+      "limit": 1.48,
+      "fill": 1.48,
       "multiplier": 100,
-      "notes": "Monday rewrite."
+      "notes": "Monday rewrite. Limit = mid."
     },
     {
       "id": "t11",
       "ts": "2026-07-03 16:00",
       "side": "EXPIRE",
       "qty": 1,
-      "instrument": "AAPL 7/3 197.5 C",
+      "instrument": "AAPLG32619750.U^G26",
+      "occ": "AAPL 7/3 197.5 C",
       "asset": "CALL",
       "strike": 197.5,
       "expiry": "2026-07-03",
-      "price": 0,
+      "limit": null,
+      "fill": 0,
       "multiplier": 100,
-      "notes": "OTM expire."
+      "notes": "Friday OTM expire."
     },
     {
       "id": "t12",
       "ts": "2026-07-06 09:30",
       "side": "SELL",
       "qty": 1,
-      "instrument": "AAPL 7/10 195.0 C",
+      "instrument": "AAPLG102619500.U^G26",
+      "occ": "AAPL 7/10 195.0 C",
       "asset": "CALL",
-      "strike": 195.0,
+      "strike": 195,
       "expiry": "2026-07-10",
-      "price": 1.72,
+      "limit": 1.72,
+      "fill": 1.72,
       "multiplier": 100,
-      "notes": "Rewrite 195s."
+      "notes": "Rewrite 195s. Limit = mid."
     },
     {
       "id": "t13",
       "ts": "2026-07-10 16:00",
       "side": "EXPIRE",
       "qty": 1,
-      "instrument": "AAPL 7/10 195.0 C",
+      "instrument": "AAPLG102619500.U^G26",
+      "occ": "AAPL 7/10 195.0 C",
       "asset": "CALL",
-      "strike": 195.0,
+      "strike": 195,
       "expiry": "2026-07-10",
-      "price": 0,
+      "limit": null,
+      "fill": 0,
       "multiplier": 100,
-      "notes": "OTM expire."
+      "notes": "Friday OTM expire."
     },
     {
       "id": "t14",
       "ts": "2026-07-13 09:30",
       "side": "SELL",
       "qty": 1,
-      "instrument": "AAPL 7/17 200.0 C",
+      "instrument": "AAPLG172620000.U^G26",
+      "occ": "AAPL 7/17 200.0 C",
       "asset": "CALL",
-      "strike": 200.0,
+      "strike": 200,
       "expiry": "2026-07-17",
-      "price": 1.38,
+      "limit": 1.38,
+      "fill": 1.38,
       "multiplier": 100,
-      "notes": "Spot 198.6, write 200s."
+      "notes": "Nearest OTM 200s. Limit = mid."
     },
     {
       "id": "t15",
       "ts": "2026-07-17 16:00",
       "side": "ASSIGN",
       "qty": 1,
-      "instrument": "AAPL 7/17 200.0 C",
+      "instrument": "AAPLG172620000.U^G26",
+      "occ": "AAPL 7/17 200.0 C",
       "asset": "CALL",
-      "strike": 200.0,
+      "strike": 200,
       "expiry": "2026-07-17",
-      "price": 0,
+      "limit": null,
+      "fill": 0,
       "multiplier": 100,
-      "notes": "ITM at expiry. Assigned the short call against the long stock."
+      "notes": "Friday ITM. Exit = wait. Assigned the short call against the long stock."
     },
     {
       "id": "t16",
@@ -205,12 +235,14 @@ window.HELIOS_BOOK = {
       "side": "SELL",
       "qty": 100,
       "instrument": "AAPL",
+      "occ": "AAPL",
       "asset": "STK",
-      "strike": null,
-      "expiry": null,
-      "price": 200.0,
+      "strike": 200,
+      "expiry": "2026-07-17",
+      "limit": 200.0,
+      "fill": 200.0,
       "multiplier": 1,
-      "notes": "Deliver 100 shares at strike. Increase cash 100\u00d7200. Now flat."
+      "notes": "Assignment delivery: sell 100 at strike. Increase cash 100\u00d7200. Now flat."
     },
     {
       "id": "t17",
@@ -218,10 +250,12 @@ window.HELIOS_BOOK = {
       "side": "BUY",
       "qty": 100,
       "instrument": "AAPL",
+      "occ": "AAPL",
       "asset": "STK",
       "strike": null,
       "expiry": null,
-      "price": 201.2,
+      "limit": 201.2,
+      "fill": 201.2,
       "multiplier": 1,
       "notes": "Flat after assignment. Combo stock leg. Decrease cash."
     },
@@ -230,78 +264,90 @@ window.HELIOS_BOOK = {
       "ts": "2026-07-20 09:30",
       "side": "SELL",
       "qty": 1,
-      "instrument": "AAPL 7/24 202.5 C",
+      "instrument": "AAPLG242620250.U^G26",
+      "occ": "AAPL 7/24 202.5 C",
       "asset": "CALL",
       "strike": 202.5,
       "expiry": "2026-07-24",
-      "price": 1.41,
+      "limit": 1.41,
+      "fill": 1.41,
       "multiplier": 100,
-      "notes": "Combo call leg. Next Friday weekly. Limit at mid."
+      "notes": "Combo call leg. Next Friday weekly. Limit = mid."
     },
     {
       "id": "t19",
       "ts": "2026-07-24 16:00",
       "side": "EXPIRE",
       "qty": 1,
-      "instrument": "AAPL 7/24 202.5 C",
+      "instrument": "AAPLG242620250.U^G26",
+      "occ": "AAPL 7/24 202.5 C",
       "asset": "CALL",
       "strike": 202.5,
       "expiry": "2026-07-24",
-      "price": 0,
+      "limit": null,
+      "fill": 0,
       "multiplier": 100,
-      "notes": "OTM expire."
+      "notes": "Friday OTM expire."
     },
     {
       "id": "t20",
       "ts": "2026-07-27 09:30",
       "side": "SELL",
       "qty": 1,
-      "instrument": "AAPL 7/31 200.0 C",
+      "instrument": "AAPLG312620000.U^G26",
+      "occ": "AAPL 7/31 200.0 C",
       "asset": "CALL",
-      "strike": 200.0,
+      "strike": 200,
       "expiry": "2026-07-31",
-      "price": 1.66,
+      "limit": 1.66,
+      "fill": 1.66,
       "multiplier": 100,
-      "notes": "Still long. Monday rewrite."
+      "notes": "Still long. Monday rewrite. Limit = mid."
     },
     {
       "id": "t21",
       "ts": "2026-07-31 16:00",
       "side": "EXPIRE",
       "qty": 1,
-      "instrument": "AAPL 7/31 200.0 C",
+      "instrument": "AAPLG312620000.U^G26",
+      "occ": "AAPL 7/31 200.0 C",
       "asset": "CALL",
-      "strike": 200.0,
+      "strike": 200,
       "expiry": "2026-07-31",
-      "price": 0,
+      "limit": null,
+      "fill": 0,
       "multiplier": 100,
-      "notes": "OTM expire."
+      "notes": "Friday OTM expire."
     },
     {
       "id": "t22",
       "ts": "2026-08-03 09:30",
       "side": "SELL",
       "qty": 1,
-      "instrument": "AAPL 8/7 205.0 C",
+      "instrument": "AAPLH72620500.U^H26",
+      "occ": "AAPL 8/7 205.0 C",
       "asset": "CALL",
-      "strike": 205.0,
+      "strike": 205,
       "expiry": "2026-08-07",
-      "price": 1.52,
+      "limit": 1.52,
+      "fill": 1.52,
       "multiplier": 100,
-      "notes": "Spot 204.1, write 205s."
+      "notes": "Nearest OTM 205s. Limit = mid."
     },
     {
       "id": "t23",
       "ts": "2026-08-07 16:00",
       "side": "EXPIRE",
       "qty": 1,
-      "instrument": "AAPL 8/7 205.0 C",
+      "instrument": "AAPLH72620500.U^H26",
+      "occ": "AAPL 8/7 205.0 C",
       "asset": "CALL",
-      "strike": 205.0,
+      "strike": 205,
       "expiry": "2026-08-07",
-      "price": 0,
+      "limit": null,
+      "fill": 0,
       "multiplier": 100,
-      "notes": "OTM expire. Sample window ends."
+      "notes": "Friday OTM expire. Sample window ends."
     }
   ],
   "ledger": [
@@ -626,13 +672,6 @@ window.HELIOS_BOOK = {
       "excess": 22904.0
     }
   ],
-  "writeup": {
-    "title": "Worked example \u2014 AAPL Friday weeklies (wait through expiry)",
-    "fill": "Illustrative book, not a live LSEG pull. Limit at mid = (BID+ASK)/2. Stock at the 09:30 print. No bid/ask \u2192 skip. TRDPRC_1 is for the scatter only, not the fill.",
-    "roll": "No roll. Exit is wait until Friday 16:00. OTM: expire, keep shares, next Monday write the next weekly. ITM: assigned \u2014 you own stock, you are assigned a short, you are flat. Next Monday start the combo again (buy 100 + write the new Friday call).",
-    "pin": "We do not BTC. Assignment is the ITM exit. Pin is accepted; the blotter shows ASSIGN + deliver shares at strike.",
-    "regT": "Covered call: long 100 AAPL, short 1 call. Initial = 50% of stock LMV. Maintenance = 25% of LMV. Covered short call adds $0. NAV = cash + stock MV + option MV (short option negative). Available = NAV \u2212 initial. Excess = NAV \u2212 maintenance. After assignment LMV is 0 until the next Monday buy."
-  },
   "rics": [
     {
       "label": "AAPL 6/5 190 C (expired)",
@@ -647,292 +686,299 @@ window.HELIOS_BOOK = {
       "ric": "AAPLH72620500.U^H26"
     }
   ],
+  "writeup": {
+    "title": "Worked example \u2014 AAPL Friday weeklies (wait through expiry)",
+    "fill": "Illustrative book, not a live LSEG pull. Limit = fill = (BID+ASK)/2 on the call; stock at the 09:30 print. No bid/ask \u2192 skip. TRDPRC_1 is the scatter Y, not the fill.",
+    "roll": "No roll, no BTC. Exit is wait until Friday 16:00. OTM: EXPIRE, keep shares, next Monday write the next weekly. ITM: ASSIGN the short call against the long stock \u2014 you are flat. Deliver 100 shares at strike (cash += 100\u00d7strike). Next Monday buy 100 again and write the new Friday call.",
+    "pin": "Assignment is the ITM exit. The blotter shows ASSIGN on the call RIC and SELL on AAPL at the strike.",
+    "regT": "Covered call: long 100, short 1 call. Initial = 50% of stock LMV. Maintenance = 25% of LMV. Covered short call adds $0. NAV = cash + stock MV + option MV. Available = NAV \u2212 initial. After assignment LMV is 0 until the next Monday buy."
+  },
   "midVsTrade": {
     "points": [
       {
-        "mid": 0.841,
-        "trade": 0.796
+        "mid": 0.928,
+        "trade": 1.262
       },
       {
-        "mid": 1.29,
-        "trade": 1.043
+        "mid": 3.57,
+        "trade": 4.37
       },
       {
-        "mid": 1.284,
-        "trade": 1.364
+        "mid": 1.215,
+        "trade": 1.34
       },
       {
-        "mid": 1.108,
-        "trade": 0.956
+        "mid": 3.093,
+        "trade": 3.419
       },
       {
-        "mid": 1.476,
-        "trade": 1.568
-      },
-      {
-        "mid": 1.077,
-        "trade": 1.877
-      },
-      {
-        "mid": 3.761,
-        "trade": 3.62
-      },
-      {
-        "mid": 1.985,
-        "trade": 2.332
-      },
-      {
-        "mid": 0.12,
-        "trade": 0.05
-      },
-      {
-        "mid": 1.494,
-        "trade": 1.27
-      },
-      {
-        "mid": 0.941,
+        "mid": 0.52,
         "trade": 0.81
       },
       {
-        "mid": 3.01,
-        "trade": 2.31
-      },
-      {
-        "mid": 1.28,
-        "trade": 1.158
-      },
-      {
-        "mid": 0.12,
+        "mid": 0.251,
         "trade": 0.05
       },
       {
-        "mid": 1.27,
-        "trade": 1.311
+        "mid": 1.284,
+        "trade": 1.362
       },
       {
-        "mid": 2.108,
-        "trade": 1.408
+        "mid": 2.064,
+        "trade": 1.908
       },
       {
-        "mid": 2.438,
-        "trade": 1.738
+        "mid": 2.068,
+        "trade": 1.566
       },
       {
-        "mid": 2.401,
-        "trade": 2.698
+        "mid": 1.479,
+        "trade": 1.216
       },
       {
-        "mid": 2.645,
-        "trade": 2.511
-      },
-      {
-        "mid": 3.753,
-        "trade": 3.822
-      },
-      {
-        "mid": 3.625,
-        "trade": 3.737
-      },
-      {
-        "mid": 0.893,
-        "trade": 0.892
-      },
-      {
-        "mid": 0.876,
-        "trade": 1.676
-      },
-      {
-        "mid": 1.123,
-        "trade": 1.584
-      },
-      {
-        "mid": 1.093,
-        "trade": 1.921
-      },
-      {
-        "mid": 0.198,
-        "trade": 0.358
-      },
-      {
-        "mid": 3.82,
-        "trade": 3.997
-      },
-      {
-        "mid": 1.694,
-        "trade": 1.953
-      },
-      {
-        "mid": 1.152,
-        "trade": 0.951
-      },
-      {
-        "mid": 0.168,
-        "trade": 0.68
-      },
-      {
-        "mid": 0.311,
-        "trade": 0.217
-      },
-      {
-        "mid": 0.989,
-        "trade": 1.789
-      },
-      {
-        "mid": 0.369,
-        "trade": 0.395
-      },
-      {
-        "mid": 0.799,
-        "trade": 0.585
-      },
-      {
-        "mid": 2.625,
-        "trade": 2.542
-      },
-      {
-        "mid": 1.232,
-        "trade": 0.532
-      },
-      {
-        "mid": 1.301,
-        "trade": 1.345
-      },
-      {
-        "mid": 1.167,
-        "trade": 1.085
-      },
-      {
-        "mid": 0.284,
-        "trade": 0.05
-      },
-      {
-        "mid": 2.37,
-        "trade": 2.055
-      },
-      {
-        "mid": 2.477,
-        "trade": 2.517
-      },
-      {
-        "mid": 2.608,
-        "trade": 2.481
-      },
-      {
-        "mid": 0.452,
-        "trade": 0.347
-      },
-      {
-        "mid": 2.973,
-        "trade": 3.228
-      },
-      {
-        "mid": 0.98,
-        "trade": 0.888
-      },
-      {
-        "mid": 3.224,
-        "trade": 3.196
-      },
-      {
-        "mid": 3.186,
-        "trade": 3.006
-      },
-      {
-        "mid": 1.49,
-        "trade": 1.335
-      },
-      {
-        "mid": 3.603,
-        "trade": 3.776
-      },
-      {
-        "mid": 0.273,
-        "trade": 0.15
-      },
-      {
-        "mid": 1.548,
-        "trade": 1.533
-      },
-      {
-        "mid": 0.49,
-        "trade": 0.536
-      },
-      {
-        "mid": 2.548,
-        "trade": 2.636
-      },
-      {
-        "mid": 0.935,
-        "trade": 0.931
-      },
-      {
-        "mid": 2.114,
-        "trade": 2.134
-      },
-      {
-        "mid": 1.611,
-        "trade": 1.866
+        "mid": 0.827,
+        "trade": 0.648
       },
       {
         "mid": 2.002,
-        "trade": 1.302
+        "trade": 1.665
       },
       {
-        "mid": 3.088,
-        "trade": 3.051
+        "mid": 1.61,
+        "trade": 1.476
       },
       {
-        "mid": 2.037,
-        "trade": 2.083
+        "mid": 0.307,
+        "trade": 0.395
       },
       {
-        "mid": 1.323,
-        "trade": 1.392
+        "mid": 0.66,
+        "trade": 0.533
       },
       {
-        "mid": 2.618,
-        "trade": 2.64
+        "mid": 0.464,
+        "trade": 0.708
       },
       {
-        "mid": 0.12,
+        "mid": 3.63,
+        "trade": 3.809
+      },
+      {
+        "mid": 2.377,
+        "trade": 2.554
+      },
+      {
+        "mid": 2.119,
+        "trade": 2.35
+      },
+      {
+        "mid": 0.263,
+        "trade": 0.293
+      },
+      {
+        "mid": 0.163,
         "trade": 0.05
       },
       {
-        "mid": 3.029,
-        "trade": 2.901
+        "mid": 1.202,
+        "trade": 1.058
       },
       {
-        "mid": 0.287,
-        "trade": 0.267
+        "mid": 1.052,
+        "trade": 1.264
       },
       {
-        "mid": 3.817,
-        "trade": 3.711
+        "mid": 1.937,
+        "trade": 2.109
       },
       {
-        "mid": 0.418,
+        "mid": 0.344,
+        "trade": 0.233
+      },
+      {
+        "mid": 1.963,
+        "trade": 2.139
+      },
+      {
+        "mid": 2.043,
+        "trade": 1.811
+      },
+      {
+        "mid": 3.031,
+        "trade": 2.872
+      },
+      {
+        "mid": 1.031,
+        "trade": 0.874
+      },
+      {
+        "mid": 1.453,
+        "trade": 1.519
+      },
+      {
+        "mid": 3.644,
+        "trade": 3.435
+      },
+      {
+        "mid": 1.59,
+        "trade": 1.795
+      },
+      {
+        "mid": 1.633,
+        "trade": 1.587
+      },
+      {
+        "mid": 0.339,
+        "trade": 0.59
+      },
+      {
+        "mid": 2.44,
+        "trade": 2.329
+      },
+      {
+        "mid": 1.703,
+        "trade": 1.621
+      },
+      {
+        "mid": 1.881,
+        "trade": 2.108
+      },
+      {
+        "mid": 0.543,
         "trade": 0.05
+      },
+      {
+        "mid": 1.122,
+        "trade": 1.212
+      },
+      {
+        "mid": 0.43,
+        "trade": 0.647
+      },
+      {
+        "mid": 0.882,
+        "trade": 0.964
+      },
+      {
+        "mid": 1.015,
+        "trade": 0.91
+      },
+      {
+        "mid": 0.986,
+        "trade": 1.527
+      },
+      {
+        "mid": 3.605,
+        "trade": 3.722
+      },
+      {
+        "mid": 0.492,
+        "trade": 0.427
+      },
+      {
+        "mid": 1.189,
+        "trade": 1.285
+      },
+      {
+        "mid": 1.176,
+        "trade": 0.759
+      },
+      {
+        "mid": 0.193,
+        "trade": 0.46
+      },
+      {
+        "mid": 3.846,
+        "trade": 3.352
+      },
+      {
+        "mid": 0.76,
+        "trade": 0.976
+      },
+      {
+        "mid": 3.239,
+        "trade": 2.794
+      },
+      {
+        "mid": 3.841,
+        "trade": 3.716
+      },
+      {
+        "mid": 0.764,
+        "trade": 1.042
+      },
+      {
+        "mid": 2.023,
+        "trade": 1.323
       },
       {
         "mid": 0.601,
-        "trade": 0.841
+        "trade": 0.604
       },
       {
-        "mid": 0.712,
-        "trade": 1.062
+        "mid": 0.332,
+        "trade": 0.376
       },
       {
-        "mid": 1.308,
-        "trade": 1.206
+        "mid": 1.488,
+        "trade": 1.758
       },
       {
-        "mid": 0.141,
-        "trade": 0.333
+        "mid": 0.156,
+        "trade": 0.107
+      },
+      {
+        "mid": 3.216,
+        "trade": 3.336
+      },
+      {
+        "mid": 0.697,
+        "trade": 1.497
+      },
+      {
+        "mid": 0.277,
+        "trade": 0.28
+      },
+      {
+        "mid": 0.192,
+        "trade": 0.497
+      },
+      {
+        "mid": 0.307,
+        "trade": 1.107
+      },
+      {
+        "mid": 0.306,
+        "trade": 0.24
+      },
+      {
+        "mid": 3.097,
+        "trade": 3.144
+      },
+      {
+        "mid": 2.026,
+        "trade": 2.097
+      },
+      {
+        "mid": 1.046,
+        "trade": 1.846
+      },
+      {
+        "mid": 0.42,
+        "trade": 1.22
+      },
+      {
+        "mid": 3.745,
+        "trade": 4.545
+      },
+      {
+        "mid": 0.162,
+        "trade": 0.081
       }
     ],
-    "slope": 0.9578,
-    "intercept": 0.0676,
-    "r2": 0.9161,
-    "note": "Illustrative near-the-money prints vs mid \u2014 not a live LSEG pull. Replace with your chain. Y = TRDPRC_1, X = (BID+ASK)/2."
+    "slope": 0.9706,
+    "intercept": 0.1098,
+    "r2": 0.9185,
+    "note": "Illustrative near-the-money prints vs mid \u2014 not a live pull. Y = TRDPRC_1, X = (BID+ASK)/2."
   }
 };

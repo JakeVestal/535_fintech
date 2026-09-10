@@ -32,7 +32,7 @@ Full write-up:
 <p>Fetch near-the-money calls along the chain. Graph <code>TRDPRC_1</code> (Y) vs mid (X), fit a line, report <strong>R²</strong>.</p>
 
 <h3>Blotter (non-negotiable)</h3>
-<p>Trades you actually booked: time, instrument, side (BUY / SELL / EXPIRE / ASSIGN), qty, limit/fill, cash delta, note pointing at the rule. Working orders do not belong here. <strong>A signal chart is not a blotter.</strong></p>
+<p>Trades you actually booked. Columns: Time, Instrument (RIC; OCC as subtitle), Side (BUY / SELL / EXPIRE / ASSIGN), Qty, Limit, Fill, Cash Δ, Notes pointing at the rule. Friday OTM = EXPIRE. Friday ITM = ASSIGN on the call RIC and SELL stock at strike. Working orders do not belong here. <strong>A signal chart is not a blotter.</strong></p>
 
 <h3>Ledger and Reg T</h3>
 <p>Ledger = shares, short calls (strike + expiry), cash, marks. Use <strong>Reg T</strong>, not portfolio margin (computable without a broker PM engine; a book that lives in Reg T lives in PM, not the reverse).</p>

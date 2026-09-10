@@ -14,6 +14,7 @@
     <a href="data.html">Data</a>
     <a class="on" href="assignment.html">Assignment</a>
   </nav>
+  <a class="src" href="https://github.com/JakeVestal/535_fintech" target="_blank" rel="noopener">GitHub</a>
 </div>
 <main class="prose">
   <header class="hero">
@@ -177,9 +178,12 @@
   <p>
     Submit a <strong style="color:var(--fg)">clean blotter of trades you
     actually booked</strong>:
-    entries and exits. Time, instrument (stock or option RIC / OCC label), side
-    (BUY / SELL / EXPIRE / ASSIGN), qty, limit/fill price, cash delta,
-    notes that point at the rule that fired. Working orders do not belong here.
+    entries and exits. Columns: <strong style="color:var(--fg)">Time, Instrument
+    (stock or option RIC; OCC as a subtitle), Side (BUY / SELL / EXPIRE / ASSIGN),
+    Qty, Limit, Fill, Cash Δ, Notes</strong> that point at the rule that fired.
+    Friday OTM is <span class="mono">EXPIRE</span>. Friday ITM is
+    <span class="mono">ASSIGN</span> on the call and a stock
+    <span class="mono">SELL</span> at the strike. Working orders do not belong here.
     <b>A signal chart is not a blotter.</b> A blotter is a list of trades.
   </p>
 
