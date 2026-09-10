@@ -6,19 +6,46 @@
 #   Script path: scripts/apply-fintech535patch.sh
 #   Working directory: $ProjectFileDir$  (the 535_fintech repo root)
 #
-# macOS /bin/bash is 3.2 — keep this script free of mapfile/associative arrays.
+# This patch stream is for a clone of github.com/JakeVestal/535_fintech.
+# It adds files under helios/. Do not run it on the unzipped Grok app
+# (src/ + python/ at the repo root, AGENTS.md, etc.).
+#
+# macOS /bin/bash is 3.2 — no mapfile.
 
 set -euo pipefail
 
 DOWNLOADS="${FINTECH_PATCH_DIR:-$HOME/Downloads}"
 
 if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
-  echo "Not a git repo. Open the 535_fintech project root in PyCharm and run from there."
+  echo "Not a git repo. Open the 535_fintech GitHub clone in PyCharm."
   exit 1
 fi
 
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
+
+if [[ -f AGENTS.md && -f src/routes/data.tsx && ! -d helios && ! -d fintech535 ]]; then
+  echo "This looks like the unzipped Helios zip (files at repo root), not the GitHub course clone."
+  echo "Clone https://github.com/JakeVestal/535_fintech.git into a new folder and run the script there."
+  exit 1
+fi
+
+if ! git diff --quiet --cached || ! git diff --quiet; then
+  echo "Working tree is dirty — git am refuses to run."
+  echo
+  echo "This repo must be a CLEAN clone of JakeVestal/535_fintech (Reflex on main)."
+  echo "Patches create helios/; they do not overlay src/ at the root."
+  echo
+  echo "Safe path:"
+  echo "  cd ~/Desktop"
+  echo "  git clone https://github.com/JakeVestal/535_fintech.git 535_fintech_git"
+  echo "  # PyCharm: open 535_fintech_git, script = scripts/apply-fintech535patch.sh"
+  echo
+  echo "Do NOT git reset --hard unless you mean to throw away the zip overlay."
+  echo
+  git status -sb | head -n 40
+  exit 1
+fi
 
 LATEST="$(
   FINTECH_PATCH_DIR="$DOWNLOADS" python3 - <<'PY'
