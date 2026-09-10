@@ -1,76 +1,67 @@
 # FINTECH 535 — Covered Call Backtest
 
 **Due:** [set in Canvas]  
-**Turn in:** your GitHub Pages URL. The graded site must be **static** (HTML / JS / CSS / JSON).  
-**Do not** turn in a live LSEG page. Workspace calls will not run on Pages.
+**Turn in:** your GitHub Pages URL.  
+**The static site is 100% of the grade.** I will not grade a data fetcher, a Node app, or whether Workspace still works at turn-in time.
 
-## The split (non-negotiable)
+I grade **analysis, thoughtfulness, and how you implemented the theory** — the book, the rules, the charts, the write-up.
 
-| Where | What |
-|---|---|
-| **Your machine** | LSEG Workspace + Python (or any local tool) to pull stock and listed calls |
-| **GitHub Pages** | Backtest, blotter, ledger, charts, write-up |
+## Two surfaces, one grade
 
-Node / Vite / TanStack / Reflex are **not** required. If a stack needs a server, it is a local lab only. Bake results into files under `gh-pages/` (this repo already deploys that folder).
+| Surface | Role | Graded? |
+|---|---|---|
+| **Pages** (`gh-pages/`) | Blotter, ledger, NAV/margin, write-up | **Yes. This is the assignment.** |
+| **Local Data** | How you *get* the tape (Workspace) | No. A tool, not a deliverable. |
 
-Helios example (what Pages serves): `gh-pages/helios/` — `index.html`, `styles.css`, `app.js`, `book.js`. Replace `book.js` with your book. No build step.
+GitHub Pages cannot run LSEG. A Data page on Pages must fail loudly with **“Data connection required”** and tell the reader to run it locally. Helios does that at `gh-pages/helios/data.html`.
 
-## Strategy
+Local pull (optional, same static files):
 
-Backtest a **covered call** on one U.S. equity (Helios uses `UUUU`).
+```bash
+# Workspace open and signed in
+python3 helios/python/local_server.py
+# http://127.0.0.1:8765/helios/data.html
+```
+
+Download JSON from Data, bake what you used into `book.js` (or equivalent), push `gh-pages/`. The published blotter must render with JavaScript off the baked file. No live endpoint.
+
+Node / Vite / TanStack are not required. HTML, CSS, JS, JSON is the stack.
+
+## Strategy (the theory you implement)
+
+Backtest a **covered call** on one U.S. equity (Helios sample: `UUUU`).
 
 1. Buy **100 shares**.
-2. Sell **1 call**, target **~5 DTE** (weeklies).
-3. Each week: **let it expire**, **get assigned**, or **roll** — write the rules down.
-4. Horizon: about **10 weeks**, plus enough forward weeklies to see ~5 weeks past the last stock bar.
+2. Sell **1 call**, target **~5 DTE**.
+3. Each week: expire, assign, or **roll** — your rules, written on the site.
+4. ~10 weeks of history; strikes from a bit below the window low to a bit above the high.
 
-Strikes: from a bit below the stock’s low in the window to a bit above its high.
+Show **fills you actually booked**, not a signal overlay.
 
-## Local data (not graded at the URL)
+## What the Pages site must contain
 
-Workspace open and signed in. Prefer **hourly** bars. For each call, keep `TRDPRC_1`, `OPEN_BID`, `OPEN_ASK`. Cache by strike × expiry. Expired U.S. equity RICs look like `UUUUH212601450.U^H26`. Guess-and-check must fail soft.
+- **Blotter** — time, instrument, side, qty, price, notes
+- **Ledger** — stock, short calls, cash over time
+- **Reg T accounts** — NAV, cash, initial (50% of stock LMV; covered short call adds $0), maintenance (25% of LMV), available funds (NAV − initial), excess (NAV − maintenance)
+- **NAV and margin paths** with mouseover values
+- **Write-up:** fill rule, roll rule, pin/assignment, **why Reg T not portfolio margin** (computable without a broker PM engine; not broker-dependent; if it lives in Reg T it lives in PM, not the reverse)
+- Optional: mid = (bid+ask)/2 vs trade and R², as a figure or table on the same site
 
-Plot **mid = (bid+ask)/2** vs trade and report **R²** (can live on the Pages write-up as a figure or table).
-
-## Pages site (graded)
-
-Must show:
-
-**Blotter** — trades you actually booked: time, asset, side, qty, price.
-
-**Ledger** over time: long stock, short calls, cash.
-
-**Accounts (Reg T):** NAV, cash, initial margin (50% of stock LMV; covered short call adds $0), maintenance (25% of LMV), available funds (NAV − initial), excess (NAV − maintenance).
-
-NAV path and margin path with mouseover values.
-
-**Write-up on the same site:**
-
-- Fill rule (last? bid? skip if no print?)
-- Roll rule (when, which expiry/strike)
-- Pin / assignment
-- Why **Reg T** not portfolio margin: computable without a broker PM engine, not broker-dependent; a book that lives in Reg T lives in PM, not the other way around.
-
-## Practical limits
-
-- One name, one window, hourly or daily.
-- One RIC at a time against Workspace.
-- If you keep a local Data explorer, it is extra. The URL must render with JavaScript off the baked `book.js` (or equivalent).
-
-## Rubric (draft)
+## Rubric (100% the published site)
 
 | | |
 |---|---|
-| Data actually used (and R² mid vs trade) | 20 |
-| Rules in writing (5 DTE, roll, fill, pin) | 20 |
-| Blotter + ledger that match those rules | 25 |
-| Reg T NAV / IM / MM / available funds | 20 |
-| Pages-safe static site (opens without Workspace) | 15 |
+| Thoughtful rules (5 DTE, fill, roll, pin) written clearly | 25 |
+| Blotter + ledger that actually implement those rules | 25 |
+| Reg T NAV / IM / MM / available funds, used correctly | 20 |
+| Charts / presentation that make the book readable | 15 |
+| Analysis: what happened, what you’d change, where theory met tape | 15 |
+
+A Data page that still tries LSEG on github.io is a defect. Show the disconnect banner instead.
 
 ## Example
 
-Local (optional): `helios/` Vite app if you want a Workspace UI.
+https://jakevestal.github.io/535_fintech/helios/  
+(after `add/helios` is merged to `main`)
 
-Published: open `gh-pages/helios/index.html` or, after merge to `main`:
-
-https://jakevestal.github.io/535_fintech/helios/
+Copy `gh-pages/helios/`, replace `book.js`, keep `data.html` as the local-only lab.

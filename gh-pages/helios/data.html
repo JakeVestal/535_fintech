@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Helios Tape — Data</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div id="gate" class="gate" hidden>
+    <div class="gate-card">
+      <p class="kicker">Data connection required</p>
+      <h1>This page cannot reach LSEG from GitHub Pages</h1>
+      <p class="lede">
+        Pages is static hosting. Workspace and the Python desktop session only exist on your machine.
+        Clone the repo, open Workspace, then:
+      </p>
+      <pre>python3 helios/python/local_server.py</pre>
+      <p class="lede">Then open <span class="mono">http://127.0.0.1:8765/helios/data.html</span>. The blotter at this same folder still works here — that is what gets graded.</p>
+      <p><a href="./">← Back to blotter</a></p>
+    </div>
+  </div>
+
+  <main id="lab">
+    <nav>
+      <a href="./">Blotter</a>
+      <a href="data.html">Data</a>
+    </nav>
+    <header>
+      <div>
+        <p class="kicker">Local lab · not graded</p>
+        <h1>Pull tape</h1>
+        <p class="lede">
+          Search an equity, fetch OHLC, download JSON. Bake what you need into
+          <span class="mono">book.js</span> and ship the blotter. This screen is how you get the data.
+        </p>
+      </div>
+      <div class="badge" id="health">checking…</div>
+    </header>
+
+    <section class="pane">
+      <div class="row">
+        <label>Search<input id="q" placeholder="UUUU" /></label>
+        <button type="button" id="search">Search</button>
+        <label>RIC
+          <select id="ric"></select>
+        </label>
+        <label>Start<input id="start" type="date"/></label>
+        <label>End<input id="end" type="date"/></label>
+        <label>Bar
+          <select id="interval">
+            <option>1min</option><option>5min</option><option>10min</option>
+            <option>30min</option><option selected>hourly</option><option>daily</option>
+          </select>
+        </label>
+        <button type="button" id="fetch" class="primary">Fetch</button>
+        <button type="button" id="dl" disabled>Download JSON</button>
+      </div>
+      <p class="lede" id="status">Workspace + local_server.py required.</p>
+    </section>
+
+    <section class="pane">
+      <div class="chart tall" id="candles"></div>
+    </section>
+  </main>
+  <script src="data.js"></script>
+</body>
+</html>

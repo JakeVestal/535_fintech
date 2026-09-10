@@ -1,7 +1,17 @@
 # Helios — static Pages blotter
 
-This folder is the **graded shape** of the assignment: HTML, CSS, JS, and a baked `book.js`. No Node, no LSEG.
+Graded surface: this folder. HTML / CSS / JS / `book.js`. No Node.
 
-After merge to `main`, GitHub Actions deploys `gh-pages/` → https://jakevestal.github.io/535_fintech/helios/
+| File | Role |
+|---|---|
+| `index.html` | Blotter / ledger / NAV / write-up (works on Pages) |
+| `data.html` | Local pull lab. On github.io it only shows **Data connection required**. |
 
-Students: copy this folder, replace `book.js` with their blotter/ledger/write-up, push `main`.
+Local Data (Workspace signed in):
+
+```bash
+python3 helios/python/local_server.py
+# http://127.0.0.1:8765/helios/data.html
+```
+
+After merge to `main`: https://jakevestal.github.io/535_fintech/helios/
