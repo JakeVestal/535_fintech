@@ -1,2 +1,5 @@
-lseg-data>=2.1.1
-pandas>=2.0.0
+reflex>=0.6.0
+pandas
+numpy
+plotly
+lseg-data

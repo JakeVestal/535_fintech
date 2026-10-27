@@ -1,45 +1,18 @@
-# Helios Tape
+# Helios — Relative Value Monitor
 
-Example covered-call backtest app for FINTECH 535.
+Reflex dashboard for options relative value and flow monitoring.
 
-Two pages:
+## Data policy
+No fallbacks. No yfinance. No simulated series presented as market data.
+Values appear only when pulled from LSEG/Refinitiv (IPA surfaces, Workspace session) or an official government source. Otherwise the field stays blank and the status reports the missing source.
 
-| Route | What | Needs Workspace? |
-|---|---|---|
-| `/` Blotter | Sample book: trades, ledger, NAV, Reg T margin | No. This is the GitHub Pages–safe turn-in. |
-| `/data` Data | Search equities, fetch OHLC, pull weekly calls, midpoint vs trade | Yes. LSEG Workspace must be running locally. |
+## Modules
+- Variance Risk Premium (VIX / realized) — requires LSEG
+- Term structure & skew — ATM term structure and 25Δ risk reversal for SPX vs QQQ; tech premium by tenor. Requires LSEG IPA ETI surfaces.
 
-The Data page talks to `POST /api/lseg`, which spawns `python/lseg_bridge.py` against the Workspace desktop session. It will not work on GitHub Pages.
-
-## Run locally
-
-Needs **LSEG Workspace** open and signed in (desktop proxy on port 9000).
-
+## Run
 ```bash
 cd helios
-python3 -m pip install -r requirements.txt
-npm install
-npm run dev
+pip install -r requirements.txt
+reflex run
 ```
-
-Open the URL Vite prints. Search an equity (try `UUUU`), Fetch hourly bars, then Pull weeklies.
-
-A `AbortError` / `ssr connected` line in the terminal on restart is noise from TanStack hydrating an old tab. Watch the **status line under Fetch**, not that dump.
-
-## Layout
-
-- `python/lseg_bridge.py` — desktop session, search, OHLC, option RICs
-- `python/option_rics.py` — expired-call RIC builder (`UUUUH212601450.U^H26`)
-- `src/lib/lseg.server.ts` — one Python process, queued
-- `src/lib/lseg.functions.ts` — browser `POST /api/lseg`
-- `src/routes/data.tsx` — Data page
-- `src/routes/index.tsx` — Blotter / ledger / NAV
-- `src/lib/sample-book.ts` — example covered-call blotter (Reg T)
-
-## Assignment shape (draft)
-
-1. Pull stock + weekly calls for a name you choose.
-2. Write a covered call (~5 DTE): buy 100 shares, sell 1 call.
-3. Log fills on the blotter; track stock, short calls, and cash on the ledger.
-4. Compute NAV, initial margin, maintenance, available funds under **Reg T** (not portfolio margin).
-5. Turn in the Blotter page (static). Keep Data local.
