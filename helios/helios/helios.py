@@ -95,18 +95,10 @@ def vrp_page() -> rx.Component:
         font_family="IBM Plex Sans, Segoe UI, system-ui, sans-serif",
     )
 
-def term_skew_page() -> rx.Component:
-    term_rows = [
-        {"Tenor": t, "SPX ATM": s, "QQQ ATM": q, "Premium": p}
-        for t, s, q, p in zip(
-            State.tenors, State.spx_atm, State.qqq_atm, State.premium_by_tenor
-        )
-    ]
-    skew_rows = [
-        {"Tenor": t, "SPX 25Δ RR": sr, "QQQ 25Δ RR": qr}
-        for t, sr, qr in zip(State.tenors, State.spx_rr25, State.qqq_rr25)
-    ]
+# Plain Python structure for the table layout. Values are bound inside the component.
+TENORS = ["1W", "2W", "1M", "2M", "3M", "6M"]
 
+def term_skew_page() -> rx.Component:
     return rx.box(
         rx.vstack(
             nav(),
@@ -134,15 +126,15 @@ def term_skew_page() -> rx.Component:
                     )
                 ),
                 rx.table.body(
-                    rx.foreach(
-                        term_rows,
-                        lambda row: rx.table.row(
-                            rx.table.cell(row["Tenor"]),
-                            rx.table.cell(row["SPX ATM"]),
-                            rx.table.cell(row["QQQ ATM"]),
-                            rx.table.cell(row["Premium"]),
+                    *[
+                        rx.table.row(
+                            rx.table.cell(TENORS[i]),
+                            rx.table.cell(State.spx_atm[i]),
+                            rx.table.cell(State.qqq_atm[i]),
+                            rx.table.cell(State.premium_by_tenor[i]),
                         )
-                    )
+                        for i in range(len(TENORS))
+                    ]
                 ),
                 width="100%",
                 border=f"1px solid {LINE}",
@@ -157,14 +149,14 @@ def term_skew_page() -> rx.Component:
                     )
                 ),
                 rx.table.body(
-                    rx.foreach(
-                        skew_rows,
-                        lambda row: rx.table.row(
-                            rx.table.cell(row["Tenor"]),
-                            rx.table.cell(row["SPX 25Δ RR"]),
-                            rx.table.cell(row["QQQ 25Δ RR"]),
+                    *[
+                        rx.table.row(
+                            rx.table.cell(TENORS[i]),
+                            rx.table.cell(State.spx_rr25[i]),
+                            rx.table.cell(State.qqq_rr25[i]),
                         )
-                    )
+                        for i in range(len(TENORS))
+                    ]
                 ),
                 width="100%",
                 border=f"1px solid {LINE}",
@@ -200,7 +192,6 @@ def term_skew_page() -> rx.Component:
     )
 
 app = rx.App(
-    theme=rx.theme(appearance="dark", accent_color="teal", radius="large"),
     stylesheets=[
         "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
     ],
