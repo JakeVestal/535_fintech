@@ -66,7 +66,7 @@ HTML = """<!DOCTYPE html>
   }
   .card .label { font-size: 0.75rem; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
   .card .value { font-size: 1.75rem; font-weight: 600; font-family: 'IBM Plex Mono', monospace; margin: 0.25rem 0; }
-  .card .hint { font-size: 0.75rem; color: var(--muted); }
+  .card .hint { font-size: 0.7rem; color: var(--muted); line-height: 1.3; margin-top: 0.25rem; }
   button {
     background: var(--accent);
     color: var(--bg);
@@ -105,10 +105,26 @@ HTML = """<!DOCTYPE html>
   <h1>Variance Risk Premium</h1>
   <div class="sub">Implied vs realized. Values appear only from IBKR TWS (paper).</div>
   <div class="cards">
-    <div class="card"><div class="label">VIX</div><div class="value" id="vix">—</div><div class="hint">30d implied (IBKR)</div></div>
-    <div class="card"><div class="label">Realized</div><div class="value" id="realized">—</div><div class="hint">Close-to-close (IBKR)</div></div>
-    <div class="card"><div class="label">VRP</div><div class="value" id="vrp">—</div><div class="hint">Implied − realized</div></div>
-    <div class="card"><div class="label">Updated</div><div class="value" id="updated">—</div><div class="hint">Session</div></div>
+    <div class="card">
+      <div class="label">VIX</div>
+      <div class="value" id="vix">—</div>
+      <div class="hint" id="hint-vix">30d implied (IBKR)</div>
+    </div>
+    <div class="card">
+      <div class="label">Realized</div>
+      <div class="value" id="realized">—</div>
+      <div class="hint" id="hint-realized">Close-to-close (IBKR)</div>
+    </div>
+    <div class="card">
+      <div class="label">VRP</div>
+      <div class="value" id="vrp">—</div>
+      <div class="hint" id="hint-vrp">Implied − realized</div>
+    </div>
+    <div class="card">
+      <div class="label">Updated</div>
+      <div class="value" id="updated">—</div>
+      <div class="hint" id="hint-updated">Session</div>
+    </div>
   </div>
   <button id="btn" onclick="refresh()">Refresh (IBKR)</button>
   <div class="status" id="status">Awaiting IBKR TWS (paper, port 7497).</div>
@@ -119,6 +135,22 @@ HTML = """<!DOCTYPE html>
   </div>
 </div>
 <script>
+// EDIT THESE to change the text under each card
+const DESCRIPTIONS = {
+  vix: "30-day implied volatility of the S&P 500. What the market is pricing for near-term moves.",
+  realized: "Trailing close-to-close volatility of the S&P 500 over the last ~30 sessions. What actually happened.",
+  vrp: "Implied minus realized. Positive means options are expensive relative to recent moves; negative means they are cheap.",
+  updated: "Time of the last successful IBKR pull."
+};
+
+function applyDescriptions() {
+  document.getElementById("hint-vix").textContent = DESCRIPTIONS.vix;
+  document.getElementById("hint-realized").textContent = DESCRIPTIONS.realized;
+  document.getElementById("hint-vrp").textContent = DESCRIPTIONS.vrp;
+  document.getElementById("hint-updated").textContent = DESCRIPTIONS.updated;
+}
+applyDescriptions();
+
 function renderLog(entries) {
   const el = document.getElementById('log');
   if (!entries || !entries.length) {
