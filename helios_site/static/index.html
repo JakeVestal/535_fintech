@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Helios</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --bg: #070b10;
+  --surface: #101820;
+  --fg: #e8f6f3;
+  --muted: #8aa8a4;
+  --accent: #2ee6d0;
+  --line: #24313c;
+  --down: #ff6b8a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+}
+.wrap { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+nav {
+  display: flex;
+  gap: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1.25rem;
+}
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+nav a.active { color: var(--accent); }
+.kicker {
+  font-size: 0.7rem;
+  letter-spacing: 0.28em;
+  color: var(--accent);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+h1 { margin: 0.25rem 0 0.5rem; font-size: 1.75rem; }
+.sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.25rem; }
+.cards { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  min-width: 140px;
+}
+.card .label { font-size: 0.75rem; color: var(--muted); font-family: "IBM Plex Mono", ui-monospace, monospace; }
+.card .value { font-size: 1.75rem; font-weight: 600; font-family: "IBM Plex Mono", ui-monospace, monospace; margin: 0.25rem 0; }
+.card .hint { font-size: 0.75rem; color: var(--muted); }
+button {
+  background: var(--accent);
+  color: var(--bg);
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: wait; }
+.status { color: var(--muted); font-size: 0.8rem; margin-top: 0.75rem; min-height: 1.2em; }
+table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1.25rem; }
+th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--line); font-size: 0.85rem; }
+th { color: var(--muted); font-weight: 500; }
+.page { display: none; }
+.page.active { display: block; }
+.spinner {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a href="#" data-page="vrp" class="active">VRP</a>
+    <a href="#" data-page="term">Term & Skew</a>
+    <a href="#" data-page="gamma">Gamma</a>
+  </nav>
+
+  <div id="vrp" class="page active">
+    <div class="kicker">HELIOS</div>
+    <h1>Variance Risk Premium</h1>
+    <div class="sub">Implied vs realized. Values appear only from LSEG.</div>
+    <div class="cards">
+      <div class="card"><div class="label">VIX</div><div class="value" id="vix">—</div><div class="hint">30d implied (LSEG)</div></div>
+      <div class="card"><div class="label">Realized</div><div class="value" id="realized">—</div><div class="hint">Close-to-close (LSEG)</div></div>
+      <div class="card"><div class="label">VRP</div><div class="value" id="vrp">—</div><div class="hint">Implied − realized</div></div>
+      <div class="card"><div class="label">Updated</div><div class="value" id="updated">—</div><div class="hint">Session</div></div>
+    </div>
+    <button id="btn-refresh">Refresh (LSEG)</button><span id="spin-refresh" class="spinner" style="display:none"></span>
+    <div class="status" id="status">Awaiting LSEG session.</div>
+  </div>
+
+  <div id="term" class="page">
+    <div class="kicker">HELIOS</div>
+    <h1>Term Structure & Skew</h1>
+    <div class="sub">ATM term structure and 25Δ risk reversal for SPX vs QQQ. Tech premium by tenor. Populated only from LSEG IPA ETI surfaces.</div>
+    <h3>ATM Term Structure — Tech Premium by Tenor</h3>
+    <table id="atm-table">
+      <thead><tr><th>Tenor</th><th>SPX ATM</th><th>QQQ ATM</th><th>Premium (pts)</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <h3>25Δ Risk Reversal (Put − Call)</h3>
+    <table id="rr-table">
+      <thead><tr><th>Tenor</th><th>SPX 25Δ RR</th><th>QQQ 25Δ RR</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button id="btn-refresh-term">Refresh (LSEG)</button><span id="spin-term" class="spinner" style="display:none"></span>
+    <div class="status" id="status-term">Awaiting LSEG session.</div>
+  </div>
+
+  <div id="gamma" class="page">
+    <div class="kicker">HELIOS</div>
+    <h1>Vol Clustering / Gamma Proxy</h1>
+    <div class="sub">SPX open-interest clusters and estimated gamma profile. Near-term expiries, strikes ±12% of spot. Data from LSEG only.</div>
+    <div class="cards">
+      <div class="card"><div class="label">Spot</div><div class="value" id="spot">—</div><div class="hint">.SPX</div></div>
+      <div class="card"><div class="label">Gamma Flip</div><div class="value" id="flip">—</div><div class="hint">cum gamma zero-cross</div></div>
+      <div class="card"><div class="label">P/C OI</div><div class="value" id="pc-oi">—</div><div class="hint">put / call</div></div>
+      <div class="card"><div class="label">P/C Vol</div><div class="value" id="pc-vol">—</div><div class="hint">put / call</div></div>
+    </div>
+    <h3>Largest OI Strikes</h3>
+    <table id="oi-table">
+      <thead><tr><th>Strike</th><th>Dist %</th><th>OI</th><th>Vol</th><th>C/P</th><th>Expiry</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button id="btn-gamma">Refresh Gamma (LSEG)</button><span id="spin-gamma" class="spinner" style="display:none"></span>
+    <div class="status" id="status-gamma">Awaiting LSEG session.</div>
+  </div>
+</div>
+
+<script>
+const pages = document.querySelectorAll(".page");
+const links = document.querySelectorAll("nav a");
+links.forEach(a => a.addEventListener("click", e => {
+  e.preventDefault();
+  links.forEach(x => x.classList.remove("active"));
+  a.classList.add("active");
+  pages.forEach(p => p.classList.remove("active"));
+  document.getElementById(a.dataset.page).classList.add("active");
+}));
+
+function fmt(v, digits=2) {
+  if (v == null || v === "") return "—";
+  return Number(v).toFixed(digits);
+}
+
+async function post(url, statusEl, spinEl, btn) {
+  statusEl.textContent = "Calling LSEG…";
+  spinEl.style.display = "inline-block";
+  btn.disabled = true;
+  try {
+    const r = await fetch(url, { method: "POST" });
+    const j = await r.json();
+    return j;
+  } catch (e) {
+    statusEl.textContent = "Network error: " + e;
+    return null;
+  } finally {
+    spinEl.style.display = "none";
+    btn.disabled = false;
+  }
+}
+
+document.getElementById("btn-refresh").addEventListener("click", async () => {
+  const status = document.getElementById("status");
+  const j = await post("/api/refresh", status, document.getElementById("spin-refresh"), document.getElementById("btn-refresh"));
+  if (!j) return;
+  status.textContent = j.status || "Done";
+  if (j.updated) document.getElementById("updated").textContent = j.updated;
+  const v = j.vrp || {};
+  document.getElementById("vix").textContent = fmt(v.vix);
+  document.getElementById("realized").textContent = fmt(v.realized);
+  document.getElementById("vrp").textContent = v.vrp == null ? "—" : (v.vrp >= 0 ? "+" : "") + fmt(v.vrp);
+  if (v.notes && v.notes.length) status.textContent += " · " + v.notes.join(" · ");
+
+  const s = j.surfaces || {};
+  if (s.tenors) {
+    const atmBody = document.querySelector("#atm-table tbody");
+    const rrBody = document.querySelector("#rr-table tbody");
+    atmBody.innerHTML = "";
+    rrBody.innerHTML = "";
+    s.tenors.forEach((t, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${t}</td><td>${s.spx_atm[i]||"—"}</td><td>${s.qqq_atm[i]||"—"}</td><td>${s.premium[i]||"—"}</td>`;
+      atmBody.appendChild(tr);
+      const tr2 = document.createElement("tr");
+      tr2.innerHTML = `<td>${t}</td><td>${s.spx_rr25[i]||"—"}</td><td>${s.qqq_rr25[i]||"—"}</td>`;
+      rrBody.appendChild(tr2);
+    });
+    document.getElementById("status-term").textContent = j.status || "Done";
+  }
+});
+
+document.getElementById("btn-refresh-term").addEventListener("click", async () => {
+  const status = document.getElementById("status-term");
+  const j = await post("/api/refresh", status, document.getElementById("spin-term"), document.getElementById("btn-refresh-term"));
+  if (!j) return;
+  status.textContent = j.status || "Done";
+  const s = j.surfaces || {};
+  if (s.tenors) {
+    const atmBody = document.querySelector("#atm-table tbody");
+    const rrBody = document.querySelector("#rr-table tbody");
+    atmBody.innerHTML = "";
+    rrBody.innerHTML = "";
+    s.tenors.forEach((t, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${t}</td><td>${s.spx_atm[i]||"—"}</td><td>${s.qqq_atm[i]||"—"}</td><td>${s.premium[i]||"—"}</td>`;
+      atmBody.appendChild(tr);
+      const tr2 = document.createElement("tr");
+      tr2.innerHTML = `<td>${t}</td><td>${s.spx_rr25[i]||"—"}</td><td>${s.qqq_rr25[i]||"—"}</td>`;
+      rrBody.appendChild(tr2);
+    });
+  }
+  if (j.vrp) {
+    document.getElementById("vix").textContent = fmt(j.vrp.vix);
+    document.getElementById("realized").textContent = fmt(j.vrp.realized);
+    document.getElementById("vrp").textContent = j.vrp.vrp == null ? "—" : (j.vrp.vrp >= 0 ? "+" : "") + fmt(j.vrp.vrp);
+    if (j.updated) document.getElementById("updated").textContent = j.updated;
+  }
+});
+
+document.getElementById("btn-gamma").addEventListener("click", async () => {
+  const status = document.getElementById("status-gamma");
+  const j = await post("/api/refresh-gamma", status, document.getElementById("spin-gamma"), document.getElementById("btn-gamma"));
+  if (!j) return;
+  status.textContent = j.status || "Done";
+  const g = j.gamma || {};
+  document.getElementById("spot").textContent = fmt(g.spot);
+  document.getElementById("flip").textContent = g.gamma_flip == null ? "—" : fmt(g.gamma_flip, 0);
+  document.getElementById("pc-oi").textContent = g.put_call_oi == null ? "—" : fmt(g.put_call_oi);
+  document.getElementById("pc-vol").textContent = g.put_call_vol == null ? "—" : fmt(g.put_call_vol);
+  if (g.notes && g.notes.length) status.textContent += " · " + g.notes.join(" · ");
+
+  const body = document.querySelector("#oi-table tbody");
+  body.innerHTML = "";
+  (g.top_oi || []).forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r.Strike}</td><td>${r["Dist %"]}</td><td>${r.OI}</td><td>${r.Vol}</td><td>${r["C/P"]}</td><td>${r.Expiry}</td>`;
+    body.appendChild(tr);
+  });
+});
+</script>
+</body>
+</html>

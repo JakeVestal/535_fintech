@@ -5,3 +5,4 @@
 535-007-gamma-clustering-page.patch
 535-008-nav-and-real-lseg.patch
 535-009-timeout-and-progress.patch
+535-010-vrp-simple-webpage.patch

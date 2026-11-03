@@ -1,5 +1,5 @@
-reflex>=0.6.0
+fastapi
+uvicorn
 pandas
 numpy
-plotly
 lseg-data
