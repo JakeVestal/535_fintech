@@ -2,4 +2,4 @@ fastapi
 uvicorn
 pandas
 numpy
-lseg-data
+ib_insync

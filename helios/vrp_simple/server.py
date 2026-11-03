@@ -1,4 +1,4 @@
-"""Simple VRP webpage. Serves HTML and pulls real LSEG data on /api/refresh."""
+"""Simple VRP webpage. Serves HTML and pulls real IBKR data on /api/refresh."""
 from datetime import datetime
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -7,17 +7,16 @@ import traceback
 
 app = FastAPI()
 
-# In-memory log of LSEG interactions for the session
+# In-memory log of IBKR interactions for the session
 LOG = []
 
-def log(direction, ric, detail):
+def log(direction, symbol, detail):
     LOG.append({
         "time": datetime.now().strftime("%H:%M:%S"),
-        "direction": direction,  # SENT or RECV
-        "ric": ric,
+        "direction": direction,  # SENT or RECV or ERR
+        "ric": symbol,
         "detail": detail,
     })
-    # keep last 50
     if len(LOG) > 50:
         LOG.pop(0)
 
@@ -104,18 +103,18 @@ HTML = """<!DOCTYPE html>
 <div class="wrap">
   <div class="kicker">HELIOS</div>
   <h1>Variance Risk Premium</h1>
-  <div class="sub">Implied vs realized. Values appear only from LSEG.</div>
+  <div class="sub">Implied vs realized. Values appear only from IBKR TWS (paper).</div>
   <div class="cards">
-    <div class="card"><div class="label">VIX</div><div class="value" id="vix">—</div><div class="hint">30d implied (LSEG)</div></div>
-    <div class="card"><div class="label">Realized</div><div class="value" id="realized">—</div><div class="hint">Close-to-close (LSEG)</div></div>
+    <div class="card"><div class="label">VIX</div><div class="value" id="vix">—</div><div class="hint">30d implied (IBKR)</div></div>
+    <div class="card"><div class="label">Realized</div><div class="value" id="realized">—</div><div class="hint">Close-to-close (IBKR)</div></div>
     <div class="card"><div class="label">VRP</div><div class="value" id="vrp">—</div><div class="hint">Implied − realized</div></div>
     <div class="card"><div class="label">Updated</div><div class="value" id="updated">—</div><div class="hint">Session</div></div>
   </div>
-  <button id="btn" onclick="refresh()">Refresh (LSEG)</button>
-  <div class="status" id="status">Awaiting LSEG session.</div>
+  <button id="btn" onclick="refresh()">Refresh (IBKR)</button>
+  <div class="status" id="status">Awaiting IBKR TWS (paper, port 7497).</div>
 
   <div class="log-section">
-    <h2>LSEG Log</h2>
+    <h2>IBKR Log</h2>
     <div class="log" id="log"><div class="entry">No requests yet.</div></div>
   </div>
 </div>
@@ -137,7 +136,7 @@ async function refresh() {
   const btn = document.getElementById('btn');
   const status = document.getElementById('status');
   btn.disabled = true;
-  status.textContent = 'Opening LSEG session…';
+  status.textContent = 'Connecting to TWS…';
   try {
     const r = await fetch('/api/refresh', { method: 'POST' });
     const data = await r.json();
@@ -164,83 +163,94 @@ def index():
 
 @app.post("/api/refresh")
 def refresh():
-    """Pull VIX and SPX realized vol via lseg-data. No fallbacks."""
+    """Pull VIX and SPX realized vol via IBKR TWS paper. No fallbacks."""
     result = {"vix": "—", "realized": "—", "vrp": "—", "updated": "—", "status": "", "log": []}
+    ib = None
     try:
-        import lseg.data as ld
-        try:
-            cfg = ld.get_config()
-            cfg.set_param("http.request-timeout", 60)
-        except Exception:
-            pass
+        from ib_insync import IB, Index
 
-        log("SENT", "session", "ld.open_session()")
-        sess = ld.open_session()
-        log("RECV", "session", f"type={type(sess).__name__}")
+        HOST = "127.0.0.1"
+        PORT = 7497  # TWS paper
+        CLIENT_ID = 1
 
-        # VIX
-        vix_val = None
-        for ric in (".VIX", "/.VIX"):
-            log("SENT", ric, "get_data fields=['TRDPRC_1']")
-            try:
-                df = ld.get_data(universe=ric, fields=["TRDPRC_1"])
-                cols = list(df.columns) if df is not None else None
-                empty = df.empty if df is not None else None
-                rows = len(df) if df is not None else 0
-                log("RECV", ric, f"get_data cols={cols} empty={empty} rows={rows}")
-                if df is not None and not df.empty:
-                    for col in ("TRDPRC_1", "TRD_PRC_1", "CF_LAST", "BID", "ASK"):
-                        if col in df.columns:
-                            val = df[col].iloc[0]
-                            if val is not None and str(val) not in ("", "nan", "None"):
-                                vix_val = float(val)
-                                result["vix"] = f"{vix_val:.2f}"
-                                log("RECV", ric, f"used {col}={vix_val}")
-                                break
-                    if vix_val is not None:
-                        break
-            except Exception as e:
-                log("ERR", ric, f"get_data {type(e).__name__}: {e}")
+        ib = IB()
+        log("SENT", "tws", f"connect {HOST}:{PORT} clientId={CLIENT_ID}")
+        ib.connect(HOST, PORT, clientId=CLIENT_ID, timeout=10)
+        log("RECV", "tws", f"connected={ib.isConnected()}")
 
-        # Realized from SPX
-        realized_val = None
-        for ric in (".SPX", "/.SPX"):
-            log("SENT", ric, "get_history fields=['TRDPRC_1'] interval=1D count=45")
-            try:
-                hist = ld.get_history(universe=ric, fields=["TRDPRC_1"], interval="1D", count=45)
-                cols = list(hist.columns) if hist is not None else None
-                empty = hist.empty if hist is not None else None
-                rows = len(hist) if hist is not None else 0
-                log("RECV", ric, f"get_history cols={cols} empty={empty} rows={rows}")
-                if hist is not None and not hist.empty:
-                    price_col = None
-                    for col in ("TRDPRC_1", "TRD_PRC_1", "CLOSE", "CF_CLOSE"):
-                        if col in hist.columns:
-                            price_col = col
-                            break
-                    if price_col:
-                        rets = hist[price_col].pct_change().dropna()
-                        log("RECV", ric, f"rets len={len(rets)} col={price_col}")
-                        if len(rets) >= 20:
-                            realized_val = float(rets.std() * math.sqrt(252) * 100)
-                            result["realized"] = f"{realized_val:.2f}"
-                            log("RECV", ric, f"realized={realized_val:.2f}")
-                            break
-            except Exception as e:
-                log("ERR", ric, f"get_history {type(e).__name__}: {e}")
+        # VIX index
+        vix_contract = Index("VIX", "CBOE", "USD")
+        log("SENT", "VIX", "qualifyContracts Index VIX CBOE")
+        qualified = ib.qualifyContracts(vix_contract)
+        if not qualified:
+            log("ERR", "VIX", "qualifyContracts returned empty")
+        else:
+            log("RECV", "VIX", f"qualified {qualified[0].symbol} conId={qualified[0].conId}")
+            bars = ib.reqHistoricalData(
+                vix_contract,
+                endDateTime="",
+                durationStr="1 D",
+                barSizeSetting="1 day",
+                whatToShow="TRADES",
+                useRTH=True,
+                formatDate=1,
+            )
+            log("RECV", "VIX", f"hist bars={len(bars) if bars else 0}")
+            if bars:
+                vix_val = float(bars[-1].close)
+                result["vix"] = f"{vix_val:.2f}"
+                log("RECV", "VIX", f"close={vix_val}")
 
-        if vix_val is not None and realized_val is not None:
-            result["vrp"] = f"{vix_val - realized_val:+.2f}"
+        # SPX realized
+        spx_contract = Index("SPX", "CBOE", "USD")
+        log("SENT", "SPX", "qualifyContracts Index SPX CBOE")
+        qualified_spx = ib.qualifyContracts(spx_contract)
+        if not qualified_spx:
+            log("ERR", "SPX", "qualifyContracts returned empty")
+        else:
+            log("RECV", "SPX", f"qualified {qualified_spx[0].symbol} conId={qualified_spx[0].conId}")
+            bars_spx = ib.reqHistoricalData(
+                spx_contract,
+                endDateTime="",
+                durationStr="45 D",
+                barSizeSetting="1 day",
+                whatToShow="TRADES",
+                useRTH=True,
+                formatDate=1,
+            )
+            log("RECV", "SPX", f"hist bars={len(bars_spx) if bars_spx else 0}")
+            if bars_spx and len(bars_spx) >= 21:
+                closes = [b.close for b in bars_spx]
+                rets = []
+                for i in range(1, len(closes)):
+                    if closes[i-1] and closes[i]:
+                        rets.append(closes[i] / closes[i-1] - 1)
+                if len(rets) >= 20:
+                    mean = sum(rets) / len(rets)
+                    var = sum((r - mean) ** 2 for r in rets) / (len(rets) - 1)
+                    realized = math.sqrt(var) * math.sqrt(252) * 100
+                    result["realized"] = f"{realized:.2f}"
+                    log("RECV", "SPX", f"realized={realized:.2f} n={len(rets)}")
+
+        if result["vix"] != "—" and result["realized"] != "—":
+            result["vrp"] = f"{float(result['vix']) - float(result['realized']):+.2f}"
 
         result["updated"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-        if vix_val is None and realized_val is None:
-            result["status"] = "LSEG returned no usable data. See log."
+        if result["vix"] == "—" and result["realized"] == "—":
+            result["status"] = "IBKR returned no usable data. See log."
         else:
-            result["status"] = "LSEG pull complete."
+            result["status"] = "IBKR pull complete."
     except Exception as e:
-        result["status"] = f"LSEG error: {type(e).__name__}: {e}"
+        result["status"] = f"IBKR error: {type(e).__name__}: {e}"
         result["updated"] = datetime.now().strftime("%Y-%m-%d %H:%M")
         log("ERR", "refresh", f"{type(e).__name__}: {e}\\n{traceback.format_exc()}")
+    finally:
+        if ib is not None:
+            try:
+                ib.disconnect()
+                log("RECV", "tws", "disconnected")
+            except Exception:
+                pass
 
     result["log"] = list(LOG)
     return JSONResponse(result)
