@@ -18,6 +18,7 @@ class State(rx.State):
     vrp: str = "—"
     last_update: str = "—"
     status: str = "Awaiting LSEG session."
+    loading: bool = False
 
     # Term structure / skew — empty until LSEG IPA surfaces return data
     tenors: list[str] = ["1W", "2W", "1M", "2M", "3M", "6M"]
@@ -38,11 +39,20 @@ class State(rx.State):
 
     def refresh(self):
         """Pull real LSEG data. On any failure leave blanks and report the error."""
+        self.loading = True
+        self.status = "Opening LSEG session…"
         try:
             import lseg.data as ld
+            # Raise HTTP timeout for IPA surfaces (desktop proxy can be slow)
+            try:
+                cfg = ld.get_config()
+                cfg.set_param("http.request-timeout", 120)
+            except Exception:
+                pass
             ld.open_session()
 
             # --- VRP: VIX (30d implied) vs 30d realized on SPX ---
+            self.status = "Pulling VIX…"
             vix_val = None
             for ric in (".VIX", "/.VIX"):
                 try:
@@ -55,6 +65,7 @@ class State(rx.State):
                     continue
 
             # Realized from SPX closes (last ~45 calendar days)
+            self.status = "Pulling SPX history…"
             spx_hist = None
             for ric in (".SPX", "/.SPX"):
                 try:
@@ -81,14 +92,20 @@ class State(rx.State):
                 self.vrp = "—"
 
             # --- Term structure & skew via IPA ETI surfaces ---
-            self._pull_surfaces(ld)
+            self.status = "Pulling IPA surfaces…"
+            try:
+                self._pull_surfaces(ld)
+            except Exception as surf_e:
+                self.status = f"Surfaces timed out or failed: {type(surf_e).__name__}: {surf_e}. VRP still updated."
 
-            self.status = "LSEG pull complete."
+            if "Surfaces" not in self.status:
+                self.status = "LSEG pull complete."
             self.last_update = datetime.now().strftime("%Y-%m-%d %H:%M")
         except Exception as e:
             self.status = f"LSEG error: {type(e).__name__}: {e}"
             self.last_update = datetime.now().strftime("%Y-%m-%d %H:%M")
-            # Leave all market fields as "—" (already the default)
+        finally:
+            self.loading = False
 
     def _pull_surfaces(self, ld):
         """Request ATM term structure (and attempt 25Δ RR) for .SPX and QQQ.O."""
@@ -249,14 +266,22 @@ class State(rx.State):
 
     def refresh_gamma(self):
         """Pull SPX option chain data and compute gamma proxy / OI clusters."""
+        self.loading = True
+        self.gamma_status = "Opening LSEG session…"
         try:
             import lseg.data as ld
+            try:
+                cfg = ld.get_config()
+                cfg.set_param("http.request-timeout", 120)
+            except Exception:
+                pass
             import pandas as pd
             import math
             from datetime import timedelta
             from lseg.data.discovery import Chain
             ld.open_session()
 
+            self.gamma_status = "Pulling .SPX spot…"
             spot_df = ld.get_data(universe=".SPX", fields=["TRDPRC_1"])
             if spot_df is None or spot_df.empty or "TRDPRC_1" not in spot_df.columns:
                 self.gamma_status = "Could not retrieve .SPX spot."
@@ -264,6 +289,7 @@ class State(rx.State):
             spot = float(spot_df["TRDPRC_1"].iloc[0])
             self.spot = f"{spot:.2f}"
 
+            self.gamma_status = "Expanding option chain…"
             rics = []
             chain_used = None
             for chain_name in ("0#SPXW*.U", "0#SPX*.U", "0#/SPX*.U", "0#/SPXW*.U"):
@@ -279,6 +305,7 @@ class State(rx.State):
                 self.gamma_status = "Empty or unavailable option chain. Tried 0#SPXW*.U, 0#SPX*.U, 0#/SPX*.U."
                 return
 
+            self.gamma_status = f"Pulling {len(rics)} contracts…"
             fields = ["STRIKE_PRC", "EXPIR_DATE", "PUT_CALL", "OPINT_1", "ACVOL_1", "TR.IMPLIEDVOLATILITY"]
             df = ld.get_data(universe=rics, fields=fields)
             if df is None or df.empty:
@@ -389,6 +416,8 @@ class State(rx.State):
             self.gamma_status = f"Loaded {len(rows)} contracts from {chain_used}. Spot {self.spot}."
         except Exception as e:
             self.gamma_status = f"LSEG error: {type(e).__name__}: {e}"
+        finally:
+            self.loading = False
 
 def metric_card(label: str, value: str, hint: str = "") -> rx.Component:
     return rx.box(
@@ -439,7 +468,12 @@ def vrp_page() -> rx.Component:
                 wrap="wrap",
                 width="100%",
             ),
-            rx.button("Refresh (LSEG)", on_click=State.refresh, background=ACCENT, color=BG, font_weight="600"),
+            rx.hstack(
+                rx.button("Refresh (LSEG)", on_click=State.refresh, background=ACCENT, color=BG, font_weight="600", disabled=State.loading),
+                rx.cond(State.loading, rx.spinner(color=ACCENT, size="2")),
+                spacing="3",
+                align="center",
+            ),
             rx.text(State.status, font_size="0.8rem", color=MUTED),
             spacing="5",
             width="100%",
@@ -535,7 +569,12 @@ def term_skew_page() -> rx.Component:
                 width="100%",
                 margin_top="1rem",
             ),
-            rx.button("Refresh (LSEG)", on_click=State.refresh, background=ACCENT, color=BG, font_weight="600"),
+            rx.hstack(
+                rx.button("Refresh (LSEG)", on_click=State.refresh, background=ACCENT, color=BG, font_weight="600", disabled=State.loading),
+                rx.cond(State.loading, rx.spinner(color=ACCENT, size="2")),
+                spacing="3",
+                align="center",
+            ),
             rx.text(State.status, font_size="0.8rem", color=MUTED),
             spacing="4",
             width="100%",
@@ -620,7 +659,12 @@ def gamma_page() -> rx.Component:
                 background=SURFACE,
                 width="100%",
             ),
-            rx.button("Refresh Gamma (LSEG)", on_click=State.refresh_gamma, background=ACCENT, color=BG, font_weight="600"),
+            rx.hstack(
+                rx.button("Refresh Gamma (LSEG)", on_click=State.refresh_gamma, background=ACCENT, color=BG, font_weight="600", disabled=State.loading),
+                rx.cond(State.loading, rx.spinner(color=ACCENT, size="2")),
+                spacing="3",
+                align="center",
+            ),
             rx.text(State.gamma_status, font_size="0.8rem", color=MUTED),
             spacing="4",
             width="100%",
