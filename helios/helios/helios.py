@@ -27,6 +27,15 @@ class State(rx.State):
     qqq_rr25: list[str] = ["—"] * 6
     premium_by_tenor: list[str] = ["—"] * 6
 
+    # Gamma / clustering
+    gamma_status: str = "Awaiting LSEG session."
+    spot: str = "—"
+    gamma_flip: str = "—"
+    put_call_oi: str = "—"
+    put_call_vol: str = "—"
+    top_oi: list[dict] = []
+    gamma_chart: list[dict] = []
+
     def refresh(self):
         """Pull real LSEG data. No fallbacks. On any failure leave blanks and report the error."""
         try:
@@ -225,6 +234,148 @@ class State(rx.State):
             # Delta axis may not be supported for these underlyings; leave RR blank
             pass
 
+
+    def refresh_gamma(self):
+        """Pull SPX option chain data and compute gamma proxy / OI clusters."""
+        try:
+            import lseg.data as ld
+            import pandas as pd
+            import math
+            from datetime import timedelta
+            from lseg.data.discovery import Chain
+            ld.open_session()
+
+            spot_df = ld.get_data(universe=".SPX", fields=["TRDPRC_1"])
+            if spot_df is None or spot_df.empty or "TRDPRC_1" not in spot_df.columns:
+                self.gamma_status = "Could not retrieve .SPX spot."
+                return
+            spot = float(spot_df["TRDPRC_1"].iloc[0])
+            self.spot = f"{spot:.2f}"
+
+            rics = []
+            for chain_name in ("0#SPX*.U", "0#/SPX*.U"):
+                try:
+                    chain = Chain(name=chain_name)
+                    rics = list(chain.constituents)[:800]
+                    if rics:
+                        break
+                except Exception:
+                    continue
+            if not rics:
+                self.gamma_status = "Empty or unavailable option chain."
+                return
+
+            fields = ["STRIKE_PRC", "EXPIR_DATE", "PUT_CALL", "OPINT_1", "ACVOL_1", "TR.IMPLIEDVOLATILITY"]
+            df = ld.get_data(universe=rics, fields=fields)
+            if df is None or df.empty:
+                self.gamma_status = "get_data returned empty chain."
+                return
+
+            df = df.dropna(subset=["STRIKE_PRC"])
+            df["STRIKE_PRC"] = pd.to_numeric(df["STRIKE_PRC"], errors="coerce")
+            df = df.dropna(subset=["STRIKE_PRC"])
+            lo, hi = spot * 0.88, spot * 1.12
+            df = df[(df["STRIKE_PRC"] >= lo) & (df["STRIKE_PRC"] <= hi)]
+
+            if "EXPIR_DATE" in df.columns:
+                df["EXPIR_DATE"] = pd.to_datetime(df["EXPIR_DATE"], errors="coerce")
+                cutoff = datetime.now() + timedelta(days=45)
+                df = df[df["EXPIR_DATE"] <= cutoff]
+
+            if df.empty:
+                self.gamma_status = "No near-term near-spot options after filter."
+                return
+
+            df["OPINT_1"] = pd.to_numeric(df["OPINT_1"], errors="coerce").fillna(0)
+            df["ACVOL_1"] = pd.to_numeric(df["ACVOL_1"], errors="coerce").fillna(0)
+            if "TR.IMPLIEDVOLATILITY" in df.columns:
+                df["IV"] = pd.to_numeric(df["TR.IMPLIEDVOLATILITY"], errors="coerce").fillna(0.20)
+            else:
+                df["IV"] = 0.20
+
+            def bs_gamma(S, K, iv, T=21/365, r=0.04):
+                if iv <= 0 or T <= 0 or S <= 0:
+                    return 0.0
+                try:
+                    d1 = (math.log(S/K) + (r + 0.5*iv*iv)*T) / (iv * math.sqrt(T))
+                    pdf = math.exp(-0.5 * d1 * d1) / math.sqrt(2 * math.pi)
+                    return pdf / (S * iv * math.sqrt(T))
+                except Exception:
+                    return 0.0
+
+            rows = []
+            for _, row in df.iterrows():
+                K = float(row["STRIKE_PRC"])
+                oi = float(row["OPINT_1"])
+                vol = float(row["ACVOL_1"])
+                iv = float(row["IV"]) if row["IV"] > 0 else 0.20
+                g = bs_gamma(spot, K, iv)
+                cp = str(row.get("PUT_CALL", ""))
+                sign = 1.0 if cp.upper().startswith("C") else -1.0
+                gamma_notional = g * oi * 100 * sign
+                rows.append({
+                    "strike": K,
+                    "oi": oi,
+                    "vol": vol,
+                    "call_put": cp,
+                    "expiry": str(row.get("EXPIR_DATE", ""))[:10],
+                    "gamma": gamma_notional,
+                    "dist": (K - spot) / spot * 100,
+                })
+
+            if not rows:
+                self.gamma_status = "No usable rows after computation."
+                return
+
+            top = sorted(rows, key=lambda r: r["oi"], reverse=True)[:12]
+            self.top_oi = [
+                {
+                    "Strike": f"{r['strike']:.0f}",
+                    "Dist %": f"{r['dist']:+.1f}",
+                    "OI": f"{r['oi']:,.0f}",
+                    "Vol": f"{r['vol']:,.0f}",
+                    "C/P": r["call_put"],
+                    "Expiry": r["expiry"],
+                }
+                for r in top
+            ]
+
+            by_strike = {}
+            for r in rows:
+                by_strike.setdefault(r["strike"], 0.0)
+                by_strike[r["strike"]] += r["gamma"]
+            gamma_list = sorted(
+                [{"strike": k, "gamma": v} for k, v in by_strike.items()],
+                key=lambda x: x["strike"],
+            )
+            self.gamma_chart = gamma_list
+
+            cum = 0.0
+            flip = None
+            for i, g in enumerate(gamma_list):
+                prev = cum
+                cum += g["gamma"]
+                if prev * cum <= 0 and abs(prev) + abs(cum) > 0:
+                    if abs(g["gamma"]) > 0 and i > 0:
+                        prev_strike = gamma_list[i-1]["strike"]
+                        frac = abs(prev) / (abs(prev) + abs(g["gamma"]))
+                        flip = prev_strike + (g["strike"] - prev_strike) * frac
+                    else:
+                        flip = g["strike"]
+                    break
+            self.gamma_flip = f"{flip:.0f}" if flip else "—"
+
+            put_oi = sum(r["oi"] for r in rows if str(r["call_put"]).upper().startswith("P"))
+            call_oi = sum(r["oi"] for r in rows if str(r["call_put"]).upper().startswith("C"))
+            put_vol = sum(r["vol"] for r in rows if str(r["call_put"]).upper().startswith("P"))
+            call_vol = sum(r["vol"] for r in rows if str(r["call_put"]).upper().startswith("C"))
+            self.put_call_oi = f"{put_oi/call_oi:.2f}" if call_oi else "—"
+            self.put_call_vol = f"{put_vol/call_vol:.2f}" if call_vol else "—"
+
+            self.gamma_status = f"Loaded {len(rows)} contracts. Spot {self.spot}."
+        except Exception as e:
+            self.gamma_status = f"LSEG error: {type(e).__name__}: {e}"
+
 def metric_card(label: str, value: str, hint: str = "") -> rx.Component:
     return rx.box(
         rx.text(label, font_size="0.75rem", color=MUTED, font_family="IBM Plex Mono"),
@@ -240,7 +391,8 @@ def metric_card(label: str, value: str, hint: str = "") -> rx.Component:
 def nav() -> rx.Component:
     return rx.hstack(
         rx.link("VRP", href="/", color=MUTED, font_size="0.85rem", font_family="IBM Plex Mono"),
-        rx.link("Term & Skew", href="/term-skew", color=ACCENT, font_size="0.85rem", font_family="IBM Plex Mono"),
+        rx.link("Term & Skew", href="/term-skew", color=MUTED, font_size="0.85rem", font_family="IBM Plex Mono"),
+        rx.link("Gamma", href="/gamma", color=ACCENT, font_size="0.85rem", font_family="IBM Plex Mono"),
         spacing="4",
         padding_bottom="0.75rem",
         border_bottom=f"1px solid {LINE}",
@@ -383,6 +535,91 @@ def term_skew_page() -> rx.Component:
         font_family="IBM Plex Sans, Segoe UI, system-ui, sans-serif",
     )
 
+
+def gamma_page() -> rx.Component:
+    return rx.box(
+        rx.vstack(
+            nav(),
+            rx.hstack(
+                rx.vstack(
+                    rx.text("HELIOS", font_size="0.7rem", letter_spacing="0.28em", color=ACCENT, font_family="IBM Plex Mono"),
+                    rx.heading("Vol Clustering / Gamma Proxy", size="6", color=FG),
+                    rx.text("SPX open-interest clusters and estimated gamma profile. Near-term expiries, strikes ±12% of spot. Data from LSEG only.", color=MUTED, font_size="0.9rem"),
+                    align_items="start",
+                    spacing="1",
+                ),
+                rx.spacer(),
+                rx.badge("LSEG ONLY", variant="outline", color_scheme="teal"),
+                width="100%",
+                align="end",
+            ),
+            rx.hstack(
+                metric_card("Spot", State.spot, ".SPX"),
+                metric_card("Gamma Flip", State.gamma_flip, "cum gamma zero-cross"),
+                metric_card("P/C OI", State.put_call_oi, "put / call"),
+                metric_card("P/C Vol", State.put_call_vol, "put / call"),
+                spacing="3",
+                wrap="wrap",
+                width="100%",
+            ),
+            rx.heading("Largest OI Strikes", size="4", color=FG, margin_top="0.5rem"),
+            rx.table.root(
+                rx.table.header(
+                    rx.table.row(
+                        rx.table.column_header_cell("Strike"),
+                        rx.table.column_header_cell("Dist %"),
+                        rx.table.column_header_cell("OI"),
+                        rx.table.column_header_cell("Vol"),
+                        rx.table.column_header_cell("C/P"),
+                        rx.table.column_header_cell("Expiry"),
+                    )
+                ),
+                rx.table.body(
+                    rx.foreach(
+                        State.top_oi,
+                        lambda row: rx.table.row(
+                            rx.table.cell(row["Strike"]),
+                            rx.table.cell(row["Dist %"]),
+                            rx.table.cell(row["OI"]),
+                            rx.table.cell(row["Vol"]),
+                            rx.table.cell(row["C/P"]),
+                            rx.table.cell(row["Expiry"]),
+                        ),
+                    )
+                ),
+                width="100%",
+                border=f"1px solid {LINE}",
+            ),
+            rx.heading("Estimated Gamma by Strike", size="4", color=FG, margin_top="1rem"),
+            rx.box(
+                rx.text(
+                    "Gamma profile is Black-Scholes gamma × OI × 100, signed by call (+)/put (−). "
+                    "Series is stored in State.gamma_chart for Plotly rendering. "
+                    "Gamma flip is the approximate zero-crossing of the cumulative curve.",
+                    color=MUTED,
+                    font_size="0.85rem",
+                    line_height="1.5",
+                ),
+                padding="1rem",
+                border=f"1px solid {LINE}",
+                border_radius="0.75rem",
+                background=SURFACE,
+                width="100%",
+            ),
+            rx.button("Refresh Gamma (LSEG)", on_click=State.refresh_gamma, background=ACCENT, color=BG, font_weight="600"),
+            rx.text(State.gamma_status, font_size="0.8rem", color=MUTED),
+            spacing="4",
+            width="100%",
+            max_width="1100px",
+            margin="0 auto",
+            padding="1.5rem",
+        ),
+        background=BG,
+        min_height="100vh",
+        color=FG,
+        font_family="IBM Plex Sans, Segoe UI, system-ui, sans-serif",
+    )
+
 app = rx.App(
     stylesheets=[
         "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
@@ -390,3 +627,4 @@ app = rx.App(
 )
 app.add_page(vrp_page, route="/", title="Helios — VRP")
 app.add_page(term_skew_page, route="/term-skew", title="Helios — Term & Skew")
+app.add_page(gamma_page, route="/gamma", title="Helios — Gamma")
