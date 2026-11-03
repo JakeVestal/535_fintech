@@ -6,3 +6,4 @@
 535-008-nav-and-real-lseg.patch
 535-009-timeout-and-progress.patch
 535-010-vrp-simple-webpage.patch
+535-011-vrp-debug.patch
