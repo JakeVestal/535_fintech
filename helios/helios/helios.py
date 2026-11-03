@@ -17,7 +17,7 @@ class State(rx.State):
     realized: str = "—"
     vrp: str = "—"
     last_update: str = "—"
-    status: str = "Awaiting LSEG session. No public fallback is used."
+    status: str = "Awaiting LSEG session."
 
     # Term structure / skew — empty until LSEG IPA surfaces return data
     tenors: list[str] = ["1W", "2W", "1M", "2M", "3M", "6M"]
@@ -37,25 +37,37 @@ class State(rx.State):
     gamma_chart: list[dict] = []
 
     def refresh(self):
-        """Pull real LSEG data. No fallbacks. On any failure leave blanks and report the error."""
+        """Pull real LSEG data. On any failure leave blanks and report the error."""
         try:
             import lseg.data as ld
             ld.open_session()
 
             # --- VRP: VIX (30d implied) vs 30d realized on SPX ---
-            vix_df = ld.get_data(universe=".VIX", fields=["TRDPRC_1"])
             vix_val = None
-            if vix_df is not None and not vix_df.empty:
-                vix_val = float(vix_df["TRDPRC_1"].iloc[0])
-                self.vix = f"{vix_val:.2f}"
+            for ric in (".VIX", "/.VIX"):
+                try:
+                    vix_df = ld.get_data(universe=ric, fields=["TRDPRC_1"])
+                    if vix_df is not None and not vix_df.empty and "TRDPRC_1" in vix_df.columns:
+                        vix_val = float(vix_df["TRDPRC_1"].iloc[0])
+                        self.vix = f"{vix_val:.2f}"
+                        break
+                except Exception:
+                    continue
 
             # Realized from SPX closes (last ~45 calendar days)
-            spx_hist = ld.get_history(
-                universe=".SPX",
-                fields=["TRDPRC_1"],
-                interval="1D",
-                count=45,
-            )
+            spx_hist = None
+            for ric in (".SPX", "/.SPX"):
+                try:
+                    spx_hist = ld.get_history(
+                        universe=ric,
+                        fields=["TRDPRC_1"],
+                        interval="1D",
+                        count=45,
+                    )
+                    if spx_hist is not None and not spx_hist.empty:
+                        break
+                except Exception:
+                    continue
             realized_val = None
             if spx_hist is not None and not spx_hist.empty and "TRDPRC_1" in spx_hist.columns:
                 rets = spx_hist["TRDPRC_1"].pct_change().dropna()
@@ -74,7 +86,7 @@ class State(rx.State):
             self.status = "LSEG pull complete."
             self.last_update = datetime.now().strftime("%Y-%m-%d %H:%M")
         except Exception as e:
-            self.status = f"LSEG error: {type(e).__name__}: {e}. Fields left blank. No fallback used."
+            self.status = f"LSEG error: {type(e).__name__}: {e}"
             self.last_update = datetime.now().strftime("%Y-%m-%d %H:%M")
             # Leave all market fields as "—" (already the default)
 
@@ -253,16 +265,18 @@ class State(rx.State):
             self.spot = f"{spot:.2f}"
 
             rics = []
-            for chain_name in ("0#SPX*.U", "0#/SPX*.U"):
+            chain_used = None
+            for chain_name in ("0#SPXW*.U", "0#SPX*.U", "0#/SPX*.U", "0#/SPXW*.U"):
                 try:
                     chain = Chain(name=chain_name)
-                    rics = list(chain.constituents)[:800]
+                    rics = list(chain.constituents)[:600]
                     if rics:
+                        chain_used = chain_name
                         break
                 except Exception:
                     continue
             if not rics:
-                self.gamma_status = "Empty or unavailable option chain."
+                self.gamma_status = "Empty or unavailable option chain. Tried 0#SPXW*.U, 0#SPX*.U, 0#/SPX*.U."
                 return
 
             fields = ["STRIKE_PRC", "EXPIR_DATE", "PUT_CALL", "OPINT_1", "ACVOL_1", "TR.IMPLIEDVOLATILITY"]
@@ -372,7 +386,7 @@ class State(rx.State):
             self.put_call_oi = f"{put_oi/call_oi:.2f}" if call_oi else "—"
             self.put_call_vol = f"{put_vol/call_vol:.2f}" if call_vol else "—"
 
-            self.gamma_status = f"Loaded {len(rows)} contracts. Spot {self.spot}."
+            self.gamma_status = f"Loaded {len(rows)} contracts from {chain_used}. Spot {self.spot}."
         except Exception as e:
             self.gamma_status = f"LSEG error: {type(e).__name__}: {e}"
 
@@ -392,7 +406,7 @@ def nav() -> rx.Component:
     return rx.hstack(
         rx.link("VRP", href="/", color=MUTED, font_size="0.85rem", font_family="IBM Plex Mono"),
         rx.link("Term & Skew", href="/term-skew", color=MUTED, font_size="0.85rem", font_family="IBM Plex Mono"),
-        rx.link("Gamma", href="/gamma", color=ACCENT, font_size="0.85rem", font_family="IBM Plex Mono"),
+        rx.link("Gamma", href="/gamma", color=MUTED, font_size="0.85rem", font_family="IBM Plex Mono"),
         spacing="4",
         padding_bottom="0.75rem",
         border_bottom=f"1px solid {LINE}",
@@ -407,7 +421,7 @@ def vrp_page() -> rx.Component:
                 rx.vstack(
                     rx.text("HELIOS", font_size="0.7rem", letter_spacing="0.28em", color=ACCENT, font_family="IBM Plex Mono"),
                     rx.heading("Variance Risk Premium", size="6", color=FG),
-                    rx.text("Implied vs realized. Values appear only from LSEG. No fallback.", color=MUTED, font_size="0.9rem"),
+                    rx.text("Implied vs realized. Values appear only from LSEG.", color=MUTED, font_size="0.9rem"),
                     align_items="start",
                     spacing="1",
                 ),
@@ -450,7 +464,7 @@ def term_skew_page() -> rx.Component:
                 rx.vstack(
                     rx.text("HELIOS", font_size="0.7rem", letter_spacing="0.28em", color=ACCENT, font_family="IBM Plex Mono"),
                     rx.heading("Term Structure & Skew", size="6", color=FG),
-                    rx.text("ATM term structure and 25Δ risk reversal for SPX vs QQQ. Tech premium by tenor. Populated only from LSEG IPA ETI surfaces. No fallback.", color=MUTED, font_size="0.9rem"),
+                    rx.text("ATM term structure and 25Δ risk reversal for SPX vs QQQ. Tech premium by tenor. Populated only from LSEG IPA ETI surfaces.", color=MUTED, font_size="0.9rem"),
                     align_items="start",
                     spacing="1",
                 ),

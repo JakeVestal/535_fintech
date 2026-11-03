@@ -3,3 +3,4 @@
 535-004-fix-term-skew-var-iter.patch
 535-005-lseg-refresh.patch
 535-007-gamma-clustering-page.patch
+535-008-nav-and-real-lseg.patch
